@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Papri & My Love - 3D Romantic Ludo</title>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
   </script>
@@ -67,7 +68,6 @@
     .mx p { margin-bottom:14px; font-size:13px; opacity:.9; }
     .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:12px; border-radius:14px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
 
-    /* Status bar */
     #status { position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:4px 14px; border-radius:12px; font-size:11px; font-weight:600; pointer-events:none; transition:all .3s; }
     #status.off { background:rgba(255,26,83,.2); border-color:rgba(255,26,83,.5); color:#ff6699; }
   </style>
@@ -75,14 +75,14 @@
 <body>
   <div id="cv"></div>
   <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Every dice roll brings my heart closer to yours 💖</span></div>
-  <div id="status" class="off">⏳ Connecting...</div>
+  <div id="status">✨ Ready to Play!</div>
 
   <div id="ui">
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">Offline</span></div>
-        <button class="bi" id="bs">🔗 Share</button>
+        <div class="vh"><span class="dot"></span><span id="vs">2-Tab / P2P Online</span></div>
+        <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
     <div class="footer">
@@ -100,8 +100,8 @@
           <button class="br" data-r="hug">🤗</button>
           <button class="br" data-r="love">❤️</button>
         </div>
-        <button id="rd" disabled>🎲 Roll Dice</button>
-        <p id="tb">Waiting to connect...</p>
+        <button id="rd">🎲 Roll Dice</button>
+        <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
       <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
     </div>
@@ -195,7 +195,6 @@ class Board {
   }
   build() {
     const s = this.scene, g = this.g;
-    // Base platform
     const rim = new THREE.Mesh(new THREE.BoxGeometry(14,.48,14), new THREE.MeshLambertMaterial({color:0xe6a1b0}));
     rim.position.y = -0.25; g.add(rim);
     const base = new THREE.Mesh(new THREE.BoxGeometry(13.6,.4,13.6), new THREE.MeshLambertMaterial({color:0x1f172b}));
@@ -212,18 +211,15 @@ class Board {
 
     const CR=0xff2a55, CG=0x00cc88, CY=0xffcc00, CB=0x3399ff, CT=0x2d223d, CS=0x5a3e75;
 
-    // Home bases
     this.makeBase(0,0,5,5,CR,0,gc); this.makeBase(9,0,14,5,CY,2,gc);
     this.makeBase(0,9,5,14,CB,3,gc); this.makeBase(9,9,14,14,CG,1,gc);
 
-    // Center trophy
     const cp = gc(7,7);
-    const trophy = new THREE.Mesh(new THREE.ConeGeometry(1.2,1,.0,4), new THREE.MeshBasicMaterial({color:0xff0055}));
+    const trophy = new THREE.Mesh(new THREE.ConeGeometry(1.2,1,4), new THREE.MeshBasicMaterial({color:0xff0055}));
     trophy.position.set(cp.x,.5,cp.z); trophy.rotation.y = Math.PI/4; g.add(trophy);
     const heart = new THREE.Mesh(new THREE.SphereGeometry(.35,12,12), new THREE.MeshBasicMaterial({color:0xff3366}));
     heart.geometry.scale(1,1.2,.8); heart.position.set(cp.x,1.1,cp.z); g.add(heart);
 
-    // Track (52 cells)
     const path = [[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[14,7],[14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14],[6,14],[6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],[0,7],[0,6]];
     const safeIdx = [0,8,13,21,26,34,39,47];
     path.forEach((p,i) => {
@@ -232,7 +228,6 @@ class Board {
       this.track.push(cc(p[0],p[1],col,false));
     });
 
-    // Home paths
     for (let c=1;c<=6;c++) this.home[0].push(cc(c,7,CR,true));
     for (let c=13;c>=8;c--) this.home[1].push(cc(c,7,CG,true));
 
@@ -344,7 +339,6 @@ class Dice {
 class Particles {
   constructor(scene) {
     this.scene=scene; this.petals=[]; this.hearts=[];
-    // Rose petals
     const pg=new THREE.PlaneGeometry(.35,.45);
     const pcv=document.createElement('canvas');pcv.width=64;pcv.height=64;
     const pcx=pcv.getContext('2d');const pgr=pcx.createRadialGradient(32,32,2,32,32,30);
@@ -360,7 +354,6 @@ class Particles {
       this.pg.add(m);
     }
     scene.add(this.pg);
-    // Hearts
     const hcv=document.createElement('canvas');hcv.width=64;hcv.height=64;
     const hcx=hcv.getContext('2d');hcx.fillStyle='#ff6b8b';hcx.beginPath();
     hcx.moveTo(32,48);hcx.bezierCurveTo(32,48,12,34,12,22);hcx.bezierCurveTo(12,12,22,10,32,20);
@@ -389,9 +382,13 @@ class Particles {
 class App {
   constructor() {
     this.eng = new Engine();
-    this.myId = 0;
-    this.ws = null;
-    this.connected = false;
+    this.myId = 0; // Default Papri (Red)
+
+    // BroadcastChannel for instant 0ms 2-tab sync on same machine
+    try {
+      this.bc = new BroadcastChannel('papri_ludu_channel');
+      this.bc.onmessage = (e) => this.onMsg(e.data);
+    } catch(e) { this.bc = null; }
 
     // 3D Setup
     this.scene = new THREE.Scene();
@@ -428,7 +425,7 @@ class App {
     document.getElementById('bs').addEventListener('click', () => {
       const url = location.origin + location.pathname;
       navigator.clipboard.writeText(url).catch(()=>{});
-      alert('Link copied! Send to Papri:\n' + url);
+      alert('Room Link copied! Send to Papri:\n' + url);
     });
     document.querySelectorAll('.bm').forEach(b => b.addEventListener('click', e => {
       const m = e.target.getAttribute('data-m'); if(m) this.chat(m);
@@ -437,8 +434,8 @@ class App {
       const r = e.target.getAttribute('data-r'); if(r) this.react(r,true);
     }));
 
-    // Connect WebSocket
-    setTimeout(() => this.connectWS(), 500);
+    // Connect PeerJS
+    this.initPeerNet();
   }
 
   fitCam() {
@@ -451,37 +448,65 @@ class App {
     this.ren.setSize(innerWidth,innerHeight);
   }
 
-  connectWS() {
-    const host = location.hostname || 'localhost';
-    const wsUrl = `ws://${host}:8765`;
+  initPeerNet() {
     const st = document.getElementById('status');
+    const ROOM_ID = 'papri-love-3d-main-room';
 
-    try {
-      this.ws = new WebSocket(wsUrl);
-      this.ws.onopen = () => { st.textContent = '🔌 Connected to server'; st.className = ''; };
-      this.ws.onclose = () => { st.textContent = '❌ Disconnected'; st.className = 'off'; this.connected = false; this.ui(); setTimeout(() => this.connectWS(), 3000); };
-      this.ws.onerror = () => { setTimeout(() => this.connectWS(), 3000); };
-      this.ws.onmessage = (e) => {
-        try { this.onMsg(JSON.parse(e.data)); } catch(er) {}
-      };
-    } catch(e) {
-      setTimeout(() => this.connectWS(), 3000);
+    if (window.Peer) {
+      try {
+        // Try creating host
+        this.peer = new Peer(ROOM_ID, { debug: 1 });
+
+        this.peer.on('open', (id) => {
+          this.myId = 0; // Host = Papri
+          st.textContent = '🌹 Papri ❤️ (Red) — Waiting for partner...';
+          st.className = '';
+          this.ui();
+
+          this.peer.on('connection', (c) => {
+            this.conn = c;
+            this.setupConn(c);
+            st.textContent = '🟢 Connected with My Love!';
+            this.popup('My Love Connected! Let\'s play! ❤️');
+          });
+        });
+
+        this.peer.on('error', (err) => {
+          if (err.type === 'unavailable-id') {
+            // Host exists! Become Client (My Love)
+            if (this.peer) this.peer.destroy();
+            this.peer = new Peer({ debug: 1 });
+            this.peer.on('open', () => {
+              this.myId = 1; // Client = Green
+              st.textContent = '💖 My Love (Green) — Connecting to Papri...';
+              this.conn = this.peer.connect(ROOM_ID, { reliable: true });
+              this.setupConn(this.conn);
+              this.ui();
+            });
+          }
+        });
+      } catch(e) {
+        st.textContent = '✨ Ready to Play! (Pass & Play / 2-Tab)';
+        this.ui();
+      }
+    } else {
+      st.textContent = '✨ Ready to Play! (Pass & Play / 2-Tab)';
+      this.ui();
     }
   }
 
-  onMsg(d) {
+  setupConn(c) {
     const st = document.getElementById('status');
-    if (d.action === 'ASSIGNED') {
-      this.myId = d.playerId;
-      st.textContent = this.myId === 0 ? '🌹 You are Papri (Red)' : '💖 You are My Love (Green)';
-      this.popup(this.myId === 0 ? 'You are Papri ❤️\nWaiting for partner...' : 'You are My Love 💖\nWaiting...');
+    c.on('open', () => {
+      st.textContent = '🟢 Connected Live!';
+      st.className = '';
       this.ui();
-    } else if (d.action === 'GAME_START') {
-      this.connected = true;
-      st.textContent = '✅ Both players online!'; st.className = '';
-      this.popup('Both connected! Game ON! ❤️🎲');
-      this.ui();
-    } else if (d.action === 'DICE_ROLL') {
+    });
+    c.on('data', (d) => this.onMsg(d));
+  }
+
+  onMsg(d) {
+    if (d.action === 'DICE_ROLL') {
       this.eng.dv = d.payload.val; this.eng.dr = true;
       if (d.payload.val === 6) this.eng.extra = true;
       if (this.dice) this.dice.roll(d.payload.val, () => this.ui());
@@ -493,38 +518,45 @@ class App {
       this.parts.kiss('💖'); this.popup(d.payload.msg);
     } else if (d.action === 'REACTION') {
       this.react(d.payload.type, false);
-    } else if (d.action === 'PLAYER_LEFT') {
-      st.textContent = '⚠️ Partner disconnected'; st.className = 'off';
-      this.connected = false; this.ui();
     }
   }
 
-  send(action, payload={}) {
-    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({action,payload}));
+  broadcast(action, payload={}) {
+    const msg = { action, payload, sender: this.myId };
+    if (this.bc) try { this.bc.postMessage(msg); } catch(e) {}
+    if (this.conn && this.conn.open) try { this.conn.send(msg); } catch(e) {}
   }
 
   rollDice() {
+    // Only roll if it's my turn
     if (this.eng.turn !== this.myId) return;
     if (this.eng.dr || this.eng.winner !== null) return;
     const v = this.eng.roll(); if (!v) return;
-    this.send('DICE_ROLL', {val:v});
+
+    this.broadcast('DICE_ROLL', {val:v});
+
     if (this.dice) this.dice.roll(v, () => this.afterDice());
   }
 
   afterDice() {
     const vm = this.eng.validMoves();
     if (vm.length === 0) {
-      setTimeout(() => { this.eng.pass(); this.send('PASS_TURN',{}); this.ui(); }, 600);
+      setTimeout(() => {
+        this.eng.pass();
+        this.broadcast('PASS_TURN',{});
+        this.ui();
+      }, 600);
     } else if (vm.length === 1) {
       this.doMove(vm[0], true);
     } else {
-      this.tokens.highlight(this.eng.turn, vm); this.ui();
+      this.tokens.highlight(this.eng.turn, vm);
+      this.ui();
     }
   }
 
   doMove(tid, bcast) {
     const r = this.eng.move(tid); if (!r) return;
-    if (bcast) this.send('MOVE_TOKEN', {tokenId:tid});
+    if (bcast) this.broadcast('MOVE_TOKEN', {tokenId:tid});
     const coords = r.traj.map(p => {
       if (p.t === 'T') return this.board.track[p.i];
       if (p.t === 'H') return this.board.home[r.pi][p.i];
@@ -556,9 +588,9 @@ class App {
     }
   }
 
-  chat(m) { this.parts.kiss('💖'); this.popup(m); this.send('CHAT_MSG',{msg:m}); }
+  chat(m) { this.parts.kiss('💖'); this.popup(m); this.broadcast('CHAT_MSG',{msg:m}); }
   react(type, bcast) {
-    if (bcast) this.send('REACTION',{type});
+    if (bcast) this.broadcast('REACTION',{type});
     this.parts.kiss({rose:'🌹',kiss:'💋',hug:'🤗',love:'❤️'}[type]||'❤️');
     this.popup({rose:'🌹 Rose Shower!',kiss:'💋 Kisses!',hug:'🤗 Hugs!',love:'❤️ Love!'}[type]||'❤️');
   }
@@ -569,18 +601,29 @@ class App {
     if(wm) {wm.style.display='flex';wm.classList.remove('hid');}
   }
   ui() {
-    const t=this.eng.turn, mine=t===this.myId;
+    const t = this.eng.turn;
+    const isMyTurn = (t === this.myId);
+
     const p0=document.getElementById('p0'),p1=document.getElementById('p1');
     if(p0) p0.classList.toggle('on',t===0);
     if(p1) p1.classList.toggle('on',t===1);
+
     const btn=document.getElementById('rd');
-    if(btn) btn.disabled = !mine || this.eng.dr || this.eng.winner!==null || !this.connected;
+    // Enable roll dice button if it's player's turn and dice hasn't been rolled yet
+    if(btn) {
+      btn.disabled = !isMyTurn || this.eng.dr || this.eng.winner!==null;
+    }
+
     const tb=document.getElementById('tb');
     if(tb) {
-      if (!this.connected) tb.innerText='Waiting for partner to join...';
-      else if (this.eng.winner!==null) tb.innerText='🎉 Game Over!';
-      else if (mine) { tb.innerText='❤️ Your Turn! Roll 🎲'; tb.style.color='#ff6699'; }
-      else { tb.innerText="Partner's turn..."; tb.style.color='#fff'; }
+      if (this.eng.winner!==null) tb.innerText='🎉 Game Over!';
+      else if (isMyTurn) {
+        tb.innerText = t === 0 ? '❤️ Papri\'s Turn! Roll 🎲' : '💖 My Love\'s Turn! Roll 🎲';
+        tb.style.color='#ff6699';
+      } else {
+        tb.innerText = t === 0 ? 'Waiting for Papri\'s roll...' : 'Waiting for Partner\'s roll...';
+        tb.style.color='#fff';
+      }
     }
   }
   animate(t=0) {

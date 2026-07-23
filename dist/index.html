@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Papri & My Love - 3D Romantic Ludo</title>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
   <style>
     :root {
@@ -65,26 +66,25 @@
     .mx p { margin-bottom:14px; font-size:13px; opacity:.9; }
     .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:12px; border-radius:14px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
 
-    /* Status bar */
     #status { position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:4px 14px; border-radius:12px; font-size:11px; font-weight:600; pointer-events:none; transition:all .3s; }
     #status.off { background:rgba(255,26,83,.2); border-color:rgba(255,26,83,.5); color:#ff6699; }
   </style>
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
   </script>
-  <script type="module" crossorigin src="./assets/index-zSWpuSp2.js"></script>
+  <script type="module" crossorigin src="./assets/index-3m1JDo6j.js"></script>
 </head>
 <body>
   <div id="cv"></div>
   <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Every dice roll brings my heart closer to yours 💖</span></div>
-  <div id="status" class="off">⏳ Connecting...</div>
+  <div id="status">✨ Ready to Play!</div>
 
   <div id="ui">
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">Offline</span></div>
-        <button class="bi" id="bs">🔗 Share</button>
+        <div class="vh"><span class="dot"></span><span id="vs">2-Tab / P2P Online</span></div>
+        <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
     <div class="footer">
@@ -102,8 +102,8 @@
           <button class="br" data-r="hug">🤗</button>
           <button class="br" data-r="love">❤️</button>
         </div>
-        <button id="rd" disabled>🎲 Roll Dice</button>
-        <p id="tb">Waiting to connect...</p>
+        <button id="rd">🎲 Roll Dice</button>
+        <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
       <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
     </div>
