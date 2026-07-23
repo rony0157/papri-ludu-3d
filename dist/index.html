@@ -56,6 +56,11 @@
     #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
     #tb { font-size:13px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
 
+    /* 2D Token Picker Buttons overlay */
+    .token-picker-bar { display:flex; gap:6px; margin-top:4px; }
+    .btn-pick-token { background:linear-gradient(135deg,#00cc88,#009966); color:#fff; font-size:12px; font-weight:700; padding:6px 14px; border-radius:14px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(0,204,136,.5); transition:transform .2s; }
+    .btn-pick-token:hover { transform:scale(1.1); }
+
     .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:14px 28px; border-radius:28px; font-size:17px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
     @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
 
@@ -75,7 +80,7 @@
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
   </script>
-  <script type="module" crossorigin src="./assets/index-Bn2jJRLW.js"></script>
+  <script type="module" crossorigin src="./assets/index-hni8pXt-.js"></script>
 </head>
 <body>
   <div id="cv"></div>
@@ -109,6 +114,8 @@
           <div class="dice-val-box" id="dv-box">🎲</div>
           <button id="rd">🎲 Roll Dice</button>
         </div>
+        <!-- 2D token selection buttons container -->
+        <div class="token-picker-bar" id="tp-bar"></div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
       <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>

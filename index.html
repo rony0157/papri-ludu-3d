@@ -58,6 +58,11 @@
     #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
     #tb { font-size:13px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
 
+    /* 2D Token Picker Buttons overlay */
+    .token-picker-bar { display:flex; gap:6px; margin-top:4px; }
+    .btn-pick-token { background:linear-gradient(135deg,#00cc88,#009966); color:#fff; font-size:12px; font-weight:700; padding:6px 14px; border-radius:14px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(0,204,136,.5); transition:transform .2s; }
+    .btn-pick-token:hover { transform:scale(1.1); }
+
     .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:14px 28px; border-radius:28px; font-size:17px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
     @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
 
@@ -107,6 +112,8 @@
           <div class="dice-val-box" id="dv-box">🎲</div>
           <button id="rd">🎲 Roll Dice</button>
         </div>
+        <!-- 2D token selection buttons container -->
+        <div class="token-picker-bar" id="tp-bar"></div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
       <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
@@ -405,6 +412,7 @@ class App {
     this.myId = pParam !== null ? parseInt(pParam, 10) : null;
 
     this.isOnlinePartnerConnected = false;
+    this.autoMoveTimer = null;
 
     try {
       this.bc = new BroadcastChannel('papri_ludu_channel');
@@ -574,6 +582,17 @@ class App {
       return;
     }
 
+    // IF dice already rolled AND valid moves exist: clicking Roll Dice moves the best/furthest token automatically!
+    if (this.eng.dr && this.eng.winner === null) {
+      const vm = this.eng.validMoves();
+      if (vm.length > 0) {
+        // Pick furthest advanced token
+        const bestTokenId = this.getBestTokenToMove(vm);
+        this.doMove(bestTokenId, true);
+        return;
+      }
+    }
+
     if (this.eng.dr || this.eng.winner !== null) return;
     const v = this.eng.roll(); if (!v) return;
 
@@ -585,7 +604,24 @@ class App {
     if (this.dice) this.dice.roll(v, () => this.afterDice());
   }
 
+  getBestTokenToMove(validTokenIds) {
+    const playerTokens = this.eng.pl[this.eng.turn].tokens;
+    // Prefer tokens on track with maximum stepCount, else first token
+    let bestId = validTokenIds[0];
+    let maxSteps = -1;
+    validTokenIds.forEach(id => {
+      const t = playerTokens[id];
+      if (t.st !== 'BASE' && t.sc > maxSteps) {
+        maxSteps = t.sc;
+        bestId = id;
+      }
+    });
+    return bestId;
+  }
+
   afterDice() {
+    if (this.autoMoveTimer) clearTimeout(this.autoMoveTimer);
+
     const vm = this.eng.validMoves();
     if (vm.length === 0) {
       const pName = this.eng.turn === 0 ? 'Papri ❤️' : 'My Love 💖';
@@ -600,25 +636,59 @@ class App {
         this.ui();
       }, 700);
     } else if (vm.length === 1) {
-      // Exactly 1 valid token -> Auto move!
       this.doMove(vm[0], true);
     } else {
-      // Multiple valid tokens -> Check if ALL tokens are in BASE (e.g. rolled a 6 with all 4 in base)
       const allInBase = vm.every(id => this.eng.pl[this.eng.turn].tokens[id].st === 'BASE');
       if (allInBase) {
-        // AUTO-MOVE first base token out so player gets extra turn & game NEVER gets stuck!
         this.popup('🎉 ROLLED A 6! Token Unlocked + Extra Turn! 🎲');
         this.doMove(vm[0], true);
       } else {
-        // Tokens are on track: highlight them and guide player to tap a token on 3D board
+        // Tokens on track can move! Highlight them and display 2D Picker Buttons
         this.tokens.highlight(this.eng.turn, vm);
-        this.popup('👆 Tap a glowing token on the board to move!');
+        this.render2DTokenPicker(vm);
+        this.popup('👆 Tap a token on 3D board OR click button below to move!');
         this.ui();
+
+        // 4-second Auto-move safety timer so game NEVER freezes even if user hesitates
+        this.autoMoveTimer = setTimeout(() => {
+          if (this.eng.dr && this.eng.winner === null) {
+            const currentVm = this.eng.validMoves();
+            if (currentVm.length > 0) {
+              const bestId = this.getBestTokenToMove(currentVm);
+              this.doMove(bestId, true);
+            }
+          }
+        }, 4500);
       }
     }
   }
 
+  render2DTokenPicker(validTokenIds) {
+    const tpBar = document.getElementById('tp-bar');
+    if (!tpBar) return;
+    tpBar.innerHTML = '';
+
+    const pColorName = this.eng.turn === 0 ? 'Red' : 'Green';
+
+    validTokenIds.forEach((tid, idx) => {
+      const tokenObj = this.eng.pl[this.eng.turn].tokens[tid];
+      const btn = document.createElement('button');
+      btn.className = 'btn-pick-token';
+      btn.textContent = tokenObj.st === 'BASE' ? `🔓 Unlock ${pColorName} Token #${tid+1}` : `🚀 Move ${pColorName} Token #${tid+1} (+${this.eng.dv})`;
+      btn.addEventListener('click', () => {
+        if (this.autoMoveTimer) clearTimeout(this.autoMoveTimer);
+        this.doMove(tid, true);
+      });
+      tpBar.appendChild(btn);
+    });
+  }
+
   doMove(tid, bcast) {
+    if (this.autoMoveTimer) clearTimeout(this.autoMoveTimer);
+
+    const tpBar = document.getElementById('tp-bar');
+    if (tpBar) tpBar.innerHTML = '';
+
     const r = this.eng.move(tid); if (!r) return;
     if (bcast) this.broadcast('MOVE_TOKEN', {tokenId:tid});
     const coords = r.traj.map(p => {
@@ -681,7 +751,7 @@ class App {
 
     const btn=document.getElementById('rd');
     if(btn) {
-      btn.disabled = !isMyTurn || this.eng.dr || this.eng.winner!==null;
+      btn.disabled = !isMyTurn || (this.eng.dr && this.eng.validMoves().length === 0) || this.eng.winner!==null;
     }
 
     const tb=document.getElementById('tb');
@@ -689,7 +759,7 @@ class App {
       if (this.eng.winner!==null) tb.innerText='🎉 Game Over!';
       else if (isMyTurn) {
         if (this.eng.dr) {
-          tb.innerText = '👆 Tap a glowing token on the board to move!';
+          tb.innerText = '👆 Tap token or click button below to move!';
           tb.style.color = '#ffcc00';
         } else {
           tb.innerText = t === 0 ? '❤️ Papri\'s Turn! Roll 🎲' : '💖 My Love\'s Turn! Roll 🎲';
