@@ -17,7 +17,6 @@ export class PeerManager {
     this.initAudioElement();
   }
 
-  // Audio Element configured specifically for iOS Safari (iPhone) compatibility
   initAudioElement() {
     if (document.getElementById('remote-audio-player')) {
       this.remoteAudio = document.getElementById('remote-audio-player');
@@ -33,26 +32,27 @@ export class PeerManager {
     document.body.appendChild(this.remoteAudio);
   }
 
-  // Touch trigger to unlock iOS audio element playback
   unlockiOSAudio() {
     if (this.remoteAudio) {
       this.remoteAudio.play().catch(() => {});
     }
   }
 
-  // Safe non-blocking Peer connection init with timeout
   init(targetRoomId = null) {
     return new Promise((resolve) => {
       let isResolved = false;
 
+      // Generated clean short room ID
+      const generatedRoomId = targetRoomId || `papri-${Math.random().toString(36).substring(2, 7)}`;
+      this.roomId = generatedRoomId;
+      this.isHost = !targetRoomId;
+
       const fallbackTimer = setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
-          this.isHost = !targetRoomId;
-          this.roomId = targetRoomId || `papri-ludu-local`;
           resolve({ isHost: this.isHost, roomId: this.roomId, peerId: 'local' });
         }
-      }, 3000);
+      }, 4000);
 
       try {
         const peerOptions = {
@@ -65,8 +65,8 @@ export class PeerManager {
           }
         };
 
-        // If targetRoomId is passed, use clean Peer ID
-        this.peer = targetRoomId ? new Peer(peerOptions) : new Peer(peerOptions);
+        // Host registers custom Peer ID on PeerJS cloud server; Client gets auto ID
+        this.peer = this.isHost ? new Peer(generatedRoomId, peerOptions) : new Peer(peerOptions);
 
         this.peer.on('open', (id) => {
           if (isResolved) return;
@@ -75,13 +75,8 @@ export class PeerManager {
 
           this.myPeerId = id;
 
-          if (targetRoomId) {
-            this.isHost = false;
-            this.roomId = targetRoomId;
+          if (!this.isHost && targetRoomId) {
             this.connectToHost(targetRoomId);
-          } else {
-            this.isHost = true;
-            this.roomId = `papri-ludu-${Math.random().toString(36).substring(2, 6)}`;
           }
 
           this.setupMediaListeners();
@@ -94,12 +89,10 @@ export class PeerManager {
         });
 
         this.peer.on('error', (err) => {
-          console.warn('PeerJS fallback mode:', err);
+          console.warn('PeerJS Error/Warning:', err);
           if (!isResolved) {
             isResolved = true;
             clearTimeout(fallbackTimer);
-            this.isHost = !targetRoomId;
-            this.roomId = targetRoomId || `papri-ludu-local`;
             resolve({ isHost: this.isHost, roomId: this.roomId, peerId: 'local' });
           }
         });
@@ -108,8 +101,6 @@ export class PeerManager {
         if (!isResolved) {
           isResolved = true;
           clearTimeout(fallbackTimer);
-          this.isHost = !targetRoomId;
-          this.roomId = targetRoomId || `papri-ludu-local`;
           resolve({ isHost: this.isHost, roomId: this.roomId, peerId: 'local' });
         }
       }
@@ -126,7 +117,7 @@ export class PeerManager {
     if (!this.conn) return;
 
     this.conn.on('open', () => {
-      console.log('Peer Data Channel Connected!');
+      console.log('Peer Data Channel Connected to Host!');
       if (this.onVoiceStatusChange) this.onVoiceStatusChange('connected');
       this.startVoiceCall();
     });

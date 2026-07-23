@@ -167,7 +167,7 @@ class App {
     }
   }
 
-  // Instant Game Start Mode (Pass & Play on 1 screen OR Online)
+  // Instant Game Start Mode
   startGameInstant() {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
@@ -186,20 +186,26 @@ class App {
     if (this.peerMgr) {
       const res = await this.peerMgr.init(null);
       const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
-      this.showLovePopup(`Online Room Active! Share Link with Papri`);
+      try {
+        await navigator.clipboard.writeText(roomUrl);
+        this.showLovePopup(`✨ Room Created! Code: ${res.roomId}\nLink Copied to Clipboard!`);
+      } catch(e) {
+        this.showLovePopup(`✨ Room Created! Code: ${res.roomId}`);
+      }
     }
   }
 
   async joinRoom(code) {
+    if (!code) return;
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
     this.myPlayerIdx = 1; // Client is My Love (Green)
     this.updateUI();
 
-    if (this.peerMgr && code) {
+    if (this.peerMgr) {
       const res = await this.peerMgr.init(code.trim());
-      this.showLovePopup(`Joined Online Room with Papri! ❤️`);
+      this.showLovePopup(`Joined Online Room ${code.trim()}! ❤️`);
     }
   }
 
