@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Papri & My Love - 3D Romantic Ludo</title>
+  <title>Papri & My Love - Real 3D Ludo</title>
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
   <style>
     :root {
-      --bg: #0f0a17; --panel: rgba(26,17,40,0.88); --pink: #ff1a53;
+      --bg: #0f0a17; --panel: rgba(26,17,40,0.92); --pink: #ff1a53;
       --pink-l: #ff6699; --green: #00cc88; --text: #fff0f5;
       --glass: rgba(255,102,153,0.35);
     }
@@ -18,50 +18,50 @@
     #cv { width:100vw; height:100vh; height:100dvh; position:fixed; top:0; left:0; z-index:1; touch-action:none; background:#160d29; }
     #cv canvas { width:100%!important; height:100%!important; display:block; }
 
-    .ticker { position:absolute; top:0; left:0; width:100%; background:linear-gradient(90deg,rgba(255,26,83,.95),rgba(153,0,102,.95)); color:#fff; padding:3px 12px; font-size:12px; font-weight:600; z-index:15; text-align:center; white-space:nowrap; overflow:hidden; }
+    .ticker { position:absolute; top:0; left:0; width:100%; background:linear-gradient(90deg,rgba(255,26,83,.95),rgba(153,0,102,.95)); color:#fff; padding:3px 10px; font-size:11px; font-weight:600; z-index:15; text-align:center; white-space:nowrap; overflow:hidden; }
     .ticker span { display:inline-block; animation:tk 18s linear infinite; }
     @keyframes tk { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
 
-    #ui { position:absolute; top:24px; left:0; width:100%; height:calc(100% - 24px); z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:8px; }
+    #ui { position:absolute; top:22px; left:0; width:100%; height:calc(100% - 22px); z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:6px; }
     .ia { pointer-events:auto; }
 
-    header { display:flex; justify-content:space-between; align-items:center; background:var(--panel); backdrop-filter:blur(14px); border:1px solid var(--glass); padding:6px 12px; border-radius:18px; box-shadow:0 8px 32px rgba(0,0,0,.4); }
-    .brand h1 { font-family:'Dancing Script',cursive; font-size:20px; background:linear-gradient(135deg,#ff6699,#ff1a53); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    header { display:flex; justify-content:space-between; align-items:center; background:var(--panel); backdrop-filter:blur(14px); border:1px solid var(--glass); padding:5px 10px; border-radius:16px; box-shadow:0 6px 24px rgba(0,0,0,.4); }
+    .brand h1 { font-family:'Dancing Script',cursive; font-size:18px; background:linear-gradient(135deg,#ff6699,#ff1a53); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
     .hp { display:inline-block; animation:pu 1.5s infinite; }
     @keyframes pu { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
-    .hud { display:flex; align-items:center; gap:6px; }
-    .bi { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:var(--text); padding:5px 10px; border-radius:12px; cursor:pointer; font-weight:600; font-size:11px; transition:all .3s; }
+    .hud { display:flex; align-items:center; gap:5px; }
+    .bi { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:var(--text); padding:4px 8px; border-radius:10px; cursor:pointer; font-weight:600; font-size:10px; transition:all .3s; }
     .bi:hover { background:var(--pink); }
-    .vh { display:flex; align-items:center; gap:5px; padding:5px 8px; background:rgba(0,204,136,.15); border:1px solid rgba(0,204,136,.4); border-radius:10px; font-size:11px; font-weight:600; }
-    .dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pu 1s infinite; }
+    .vh { display:flex; align-items:center; gap:4px; padding:4px 6px; background:rgba(0,204,136,.15); border:1px solid rgba(0,204,136,.4); border-radius:8px; font-size:10px; font-weight:600; }
+    .dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pu 1s infinite; }
 
-    .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:6px; }
-    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:8px 10px; border-radius:16px; display:flex; align-items:center; gap:8px; min-width:100px; transition:all .3s; flex-shrink:0; }
-    .pc.on { border-color:var(--pink); box-shadow:0 0 20px rgba(255,26,83,.6); transform:translateY(-2px); }
-    .av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:16px; border:2px solid #fff; }
-    .pi h3 { font-size:12px; font-weight:700; } .pi p { font-size:10px; opacity:.8; }
+    .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:4px; margin-bottom: 4px; }
+    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:6px 8px; border-radius:14px; display:flex; align-items:center; gap:6px; min-width:85px; transition:all .3s; flex-shrink:0; }
+    .pc.on { border-color:var(--pink); box-shadow:0 0 16px rgba(255,26,83,.6); transform:translateY(-2px); }
+    .av { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:14px; border:2px solid #fff; }
+    .pi h3 { font-size:11px; font-weight:700; } .pi p { font-size:9px; opacity:.8; }
 
     .cc { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
-    .mb { display:flex; gap:4px; overflow-x:auto; max-width:80vw; padding:3px 6px; background:var(--panel); backdrop-filter:blur(10px); border-radius:14px; border:1px solid var(--glass); }
-    .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:10px; font-weight:600; padding:4px 8px; border-radius:10px; cursor:pointer; white-space:nowrap; transition:all .2s; }
+    .mb { display:flex; gap:3px; overflow-x:auto; max-width:85vw; padding:2px 4px; background:var(--panel); backdrop-filter:blur(10px); border-radius:12px; border:1px solid var(--glass); }
+    .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:9px; font-weight:600; padding:3px 6px; border-radius:8px; cursor:pointer; white-space:nowrap; transition:all .2s; }
     .bm:hover { background:var(--pink); }
-    .rp { display:flex; gap:4px; background:var(--panel); backdrop-filter:blur(12px); padding:3px 8px; border-radius:16px; border:1px solid var(--glass); }
-    .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:14px; padding:4px 8px; border-radius:10px; cursor:pointer; transition:transform .2s; }
+    .rp { display:flex; gap:3px; background:var(--panel); backdrop-filter:blur(12px); padding:2px 6px; border-radius:14px; border:1px solid var(--glass); }
+    .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:12px; padding:3px 6px; border-radius:8px; cursor:pointer; transition:transform .2s; }
     .br:hover { transform:scale(1.15); background:var(--pink); }
 
     /* Dice Controls & Big Display */
-    .dice-container { display:flex; align-items:center; gap:10px; }
-    .dice-val-box { width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:22px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 14px rgba(255,26,83,.5); }
-    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:15px; font-weight:700; padding:12px 28px; border:none; border-radius:28px; cursor:pointer; box-shadow:0 8px 24px rgba(255,26,83,.6); transition:all .3s; }
-    #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-    #tb { font-size:13px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
+    .dice-container { display:flex; align-items:center; gap:8px; }
+    .dice-val-box { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:20px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 12px rgba(255,26,83,.5); }
+    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:14px; font-weight:700; padding:10px 22px; border:none; border-radius:24px; cursor:pointer; box-shadow:0 6px 20px rgba(255,26,83,.6); transition:all .3s; }
+    #rd:hover { transform:scale(1.06); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    #tb { font-size:12px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
 
     /* 2D Token Picker Buttons overlay */
-    .token-picker-bar { display:flex; gap:6px; margin-top:4px; }
-    .btn-pick-token { background:linear-gradient(135deg,#00cc88,#009966); color:#fff; font-size:12px; font-weight:700; padding:6px 14px; border-radius:14px; border:none; cursor:pointer; box-shadow:0 4px 12px rgba(0,204,136,.5); transition:transform .2s; }
-    .btn-pick-token:hover { transform:scale(1.1); }
+    .token-picker-bar { display:flex; gap:4px; margin-top:2px; flex-wrap:wrap; justify-content:center; }
+    .btn-pick-token { background:linear-gradient(135deg,#00cc88,#009966); color:#fff; font-size:11px; font-weight:700; padding:5px 12px; border-radius:12px; border:none; cursor:pointer; box-shadow:0 3px 10px rgba(0,204,136,.5); transition:transform .2s; }
+    .btn-pick-token:hover { transform:scale(1.08); }
 
-    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:14px 28px; border-radius:28px; font-size:17px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
+    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:12px 22px; border-radius:24px; font-size:15px; font-weight:700; box-shadow:0 10px 28px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
     @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
 
     .fk { position:fixed; pointer-events:none; z-index:300; animation:fb 2.5s forwards ease-out; filter:drop-shadow(0 4px 12px rgba(255,26,83,.8)); }
@@ -69,22 +69,22 @@
 
     .mo { position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh; background:rgba(10,5,20,.88); backdrop-filter:blur(10px); display:flex; justify-content:center; align-items:center; z-index:400; }
     .mo.hid { display:none!important; }
-    .mx { background:rgba(26,17,40,.95); border:2px solid var(--glass); border-radius:24px; padding:24px; width:90%; max-width:400px; text-align:center; box-shadow:0 16px 48px rgba(0,0,0,.6); }
-    .mx h2 { font-family:'Dancing Script',cursive; font-size:32px; margin-bottom:6px; color:var(--pink-l); }
-    .mx h3 { font-size:24px; color:var(--pink); margin-bottom:16px; }
-    .mx p { margin-bottom:14px; font-size:13px; opacity:.9; }
-    .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:12px; border-radius:14px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
+    .mx { background:rgba(26,17,40,.95); border:2px solid var(--glass); border-radius:24px; padding:20px; width:90%; max-width:360px; text-align:center; box-shadow:0 16px 48px rgba(0,0,0,.6); }
+    .mx h2 { font-family:'Dancing Script',cursive; font-size:28px; margin-bottom:6px; color:var(--pink-l); }
+    .mx h3 { font-size:22px; color:var(--pink); margin-bottom:14px; }
+    .mx p { margin-bottom:12px; font-size:12px; opacity:.9; }
+    .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:10px; border-radius:12px; border:none; font-size:13px; font-weight:700; cursor:pointer; }
 
-    #status { position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:4px 14px; border-radius:12px; font-size:11px; font-weight:600; pointer-events:none; transition:all .3s; }
+    #status { position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:3px 12px; border-radius:10px; font-size:10px; font-weight:600; pointer-events:none; transition:all .3s; white-space:nowrap; }
   </style>
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
   </script>
-  <script type="module" crossorigin src="./assets/index-B9q60YGy.js"></script>
+  <script type="module" crossorigin src="./assets/index-DSXqySmo.js"></script>
 </head>
 <body>
   <div id="cv"></div>
-  <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Every dice roll brings my heart closer to yours 💖</span></div>
+  <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Real Ludo 3D Rules 🎲</span></div>
   <div id="status">✨ Ready to Play!</div>
 
   <div id="ui">
