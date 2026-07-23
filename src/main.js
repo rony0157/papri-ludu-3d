@@ -12,67 +12,64 @@ class App {
   constructor() {
     this.container = document.getElementById('canvas-container');
     this.engine = new LuduEngine();
-    this.myPlayerIdx = 0; // Default 0 (Host / Papri)
+    this.myPlayerIdx = 0;
     this.autoStartSeconds = 5;
     this.isOnlineMode = false;
-    
-    // 1. Call UI listeners FIRST so buttons work immediately
+    this.isJoiningRoom = false; // Flag: are we auto-joining via URL ?room= param
+
+    // Check URL for room param FIRST before anything else
+    const urlParams = new URLSearchParams(window.location.search);
+    this.roomParamFromURL = urlParams.get('room');
+    if (this.roomParamFromURL) {
+      this.isJoiningRoom = true; // Prevent auto-start countdown
+    }
+
     this.initUIListeners();
 
-    // 2. Unlock iOS Safari Audio on first touch anywhere
     window.addEventListener('pointerdown', () => {
       soundManager.resume();
       if (this.peerMgr) this.peerMgr.unlockiOSAudio();
     }, { once: true });
 
-    // 3. Initialize 3D Engine & Camera
     try {
       this.initThree();
       this.initGame3D();
     } catch (err) {
-      console.warn('Three.js Init Warning:', err);
+      console.warn('Three.js Init Error:', err);
     }
 
-    // 4. Initialize Network
     try {
       this.initNetwork();
     } catch (err) {
-      console.warn('Network Init Warning:', err);
+      console.warn('Network Init Error:', err);
     }
 
-    // Update UI immediately on load
     this.updateUI();
 
-    // 5-Second Auto Start Countdown Timer for instant entry
-    this.startAutoStartCountdown();
+    // Only start auto-countdown if NOT joining from a room link
+    if (!this.isJoiningRoom) {
+      this.startAutoStartCountdown();
+    }
 
     this.animate();
   }
 
-  // 1. Setup Three.js 3D Scene, Camera & Dynamic iPhone Responsive Fitting
   initThree() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x160d29);
     this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
 
-    this.camera = new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100
-    );
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    
+
     if (this.container) {
       this.container.appendChild(this.renderer.domElement);
     }
 
-    // High visibility lighting
-    const ambientLight = new THREE.AmbientLight(0xfff0f5, 1.0);
-    this.scene.add(ambientLight);
+    this.scene.add(new THREE.AmbientLight(0xfff0f5, 1.0));
 
     const sunLight = new THREE.DirectionalLight(0xffe6ee, 1.4);
     sunLight.position.set(6, 12, 6);
@@ -86,9 +83,7 @@ class App {
     greenLight.position.set(5, 4, 5);
     this.scene.add(greenLight);
 
-    // Initial camera position & fit
     this.updateCameraAspect();
-
     window.addEventListener('resize', () => this.onResize());
   }
 
@@ -98,11 +93,9 @@ class App {
     this.camera.aspect = aspect;
 
     if (aspect < 1.0) {
-      // iPhone / Mobile Portrait
       const dist = 14 / aspect;
       this.camera.position.set(0, dist, dist);
     } else {
-      // Desktop Landscape
       this.camera.position.set(0, 11, 11);
     }
 
@@ -111,7 +104,6 @@ class App {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  // 2. Initialize 3D Objects
   initGame3D() {
     this.board = new LudoBoard(this.scene);
     this.tokens = new TokenManager(this.scene, this.board);
@@ -126,21 +118,17 @@ class App {
     }
   }
 
-  // 3. Initialize PeerJS P2P Network
   initNetwork() {
     this.peerMgr = new PeerManager(
       (packet) => this.handleNetworkPacket(packet),
-      (status, msg) => this.updateVoiceHUD(status, msg)
+      (status) => this.updateVoiceHUD(status)
     );
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomParam = urlParams.get('room');
-
-    if (roomParam) {
+    if (this.roomParamFromURL) {
       const input = document.getElementById('input-room-code');
-      if (input) input.value = roomParam;
-      // Delay joining by 300ms until 3D engine is fully loaded & rendered on screen!
-      setTimeout(() => this.joinRoom(roomParam), 300);
+      if (input) input.value = this.roomParamFromURL;
+      // Wait for 3D to render first, then auto-join
+      setTimeout(() => this.joinRoom(this.roomParamFromURL), 500);
     }
   }
 
@@ -150,7 +138,7 @@ class App {
 
     this.countdownInterval = setInterval(() => {
       this.autoStartSeconds--;
-      if (timerText) timerText.innerText = `(Auto starting in ${this.autoStartSeconds}s...)`;
+      timerText.innerText = `(Auto starting in ${this.autoStartSeconds}s...)`;
 
       if (this.autoStartSeconds <= 0) {
         clearInterval(this.countdownInterval);
@@ -168,31 +156,25 @@ class App {
     }
   }
 
-  // Instant Game Start Mode
   startGameInstant() {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.updateUI();
-    this.showLovePopup(`Welcome Papri & Lover! ❤️ Game Started!`);
-    if (this.peerMgr && !this.peerMgr.peer) this.peerMgr.init(null);
+    this.showLovePopup('Welcome Papri & Lover! ❤️ Game Started!');
   }
 
   createRoom() {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
-    this.myPlayerIdx = 0; // Host is Papri (Red)
+    this.myPlayerIdx = 0; // Host = Red = Papri
     this.updateUI();
 
     if (this.peerMgr) {
       this.peerMgr.init(null).then((res) => {
         const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
-        try {
-          navigator.clipboard.writeText(roomUrl);
-          this.showLovePopup(`✨ Room Created! Code: ${res.roomId}\nLink Copied!`);
-        } catch(e) {
-          this.showLovePopup(`✨ Room Created! Code: ${res.roomId}`);
-        }
+        navigator.clipboard.writeText(roomUrl).catch(() => {});
+        this.showLovePopup(`✨ Room: ${res.roomId}\nLink Copied! Send to Papri!`);
       });
     }
   }
@@ -202,27 +184,28 @@ class App {
       const input = document.getElementById('input-room-code');
       code = input ? input.value : '';
     }
+    if (!code) return;
+
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
-    this.myPlayerIdx = 1; // Client is My Love (Green)
+    this.myPlayerIdx = 1; // Client = Green = My Love
     this.updateUI();
 
-    if (this.peerMgr && code) {
+    if (this.peerMgr) {
       this.peerMgr.init(code.trim()).then(() => {
-        this.showLovePopup(`Joined Online Room ${code.trim()}! ❤️`);
+        this.showLovePopup(`Joined Room: ${code.trim()}! ❤️`);
       });
     }
   }
 
-  // 4. UI Listeners
   initUIListeners() {
+    // Global inline handlers for HTML onclick fallback
     window.startGameDirect = () => this.startGameInstant();
     window.createRoomDirect = () => this.createRoom();
     window.joinRoomDirect = () => {
       const input = document.getElementById('input-room-code');
-      const code = input ? input.value : '';
-      this.joinRoom(code);
+      this.joinRoom(input ? input.value : '');
     };
 
     const btnStart = document.getElementById('btn-start-game');
@@ -234,8 +217,7 @@ class App {
     const btnJoin = document.getElementById('btn-join-room');
     if (btnJoin) btnJoin.addEventListener('click', () => {
       const input = document.getElementById('input-room-code');
-      const code = input ? input.value : '';
-      this.joinRoom(code);
+      this.joinRoom(input ? input.value : '');
     });
 
     const btnRoll = document.getElementById('btn-roll-dice');
@@ -254,26 +236,24 @@ class App {
     const btnShare = document.getElementById('btn-share-room');
     if (btnShare) {
       btnShare.addEventListener('click', () => {
-        const roomId = (this.peerMgr && this.peerMgr.roomId) ? this.peerMgr.roomId : 'papri-love-room';
+        const roomId = (this.peerMgr && this.peerMgr.roomId) ? this.peerMgr.roomId : 'papri-room';
         const roomUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
-        navigator.clipboard.writeText(roomUrl);
-        alert(`Room Link Copied! Send to Papri:\n${roomUrl}`);
+        navigator.clipboard.writeText(roomUrl).catch(() => {});
+        alert(`Room Link Copied!\n${roomUrl}`);
       });
     }
 
-    // Preset Love Messages Buttons
     document.querySelectorAll('.btn-msg').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const msg = e.target.getAttribute('data-msg');
-        this.sendLoveMessage(msg);
+        if (msg) this.sendLoveMessage(msg);
       });
     });
 
-    // Reaction Buttons
     document.querySelectorAll('.btn-react').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const type = e.target.getAttribute('data-reaction');
-        this.triggerReaction(type, true);
+        if (type) this.triggerReaction(type, true);
       });
     });
   }
@@ -285,44 +265,62 @@ class App {
     if (this.peerMgr) this.peerMgr.send('CHAT_MSG', { msg });
   }
 
+  // ===== DICE ROLL (LOCAL PLAYER) =====
   handleRollDice() {
-    const currentActivePlayer = this.isOnlineMode ? this.myPlayerIdx : this.engine.turn;
-
-    if (this.engine.turn !== currentActivePlayer || this.engine.diceRolled || this.engine.winner !== null) {
-      return;
-    }
+    // In online mode, only roll if it's actually my turn
+    if (this.isOnlineMode && this.engine.turn !== this.myPlayerIdx) return;
+    if (this.engine.diceRolled || this.engine.winner !== null) return;
 
     const val = this.engine.rollDice();
     if (!val) return;
 
     try { soundManager.playDiceRoll(); } catch(e){}
-    if (this.peerMgr && this.isOnlineMode) this.peerMgr.send('DICE_ROLL', { val });
+
+    // Send dice value to remote player
+    if (this.peerMgr && this.isOnlineMode) {
+      this.peerMgr.send('DICE_ROLL', { val });
+    }
 
     if (this.dice) {
       this.dice.roll(val, () => {
-        const validMoves = this.engine.getValidTokenMoves();
-
-        if (validMoves.length === 0) {
-          setTimeout(() => {
-            this.engine.passTurn();
-            if (this.peerMgr && this.isOnlineMode) this.peerMgr.send('PASS_TURN', {});
-            this.updateUI();
-          }, 800);
-        } else if (validMoves.length === 1) {
-          this.handleMoveToken(validMoves[0]);
-        } else {
-          if (this.tokens) this.tokens.highlightTokens(this.engine.turn, validMoves);
-          this.updateUI();
-        }
+        this.afterDiceRollAnimation();
       });
     }
   }
 
-  handleMoveToken(tokenId) {
+  // Called after dice animation finishes — handles auto-move / highlight / pass
+  afterDiceRollAnimation() {
+    const validMoves = this.engine.getValidTokenMoves();
+
+    if (validMoves.length === 0) {
+      // No valid moves — auto pass turn after short delay
+      setTimeout(() => {
+        this.engine.passTurn();
+        if (this.peerMgr && this.isOnlineMode) {
+          this.peerMgr.send('PASS_TURN', {});
+        }
+        this.updateUI();
+      }, 600);
+    } else if (validMoves.length === 1) {
+      // Only one valid token — auto move it
+      this.doMoveToken(validMoves[0], true);
+    } else {
+      // Multiple valid tokens — highlight them and wait for click
+      if (this.tokens) this.tokens.highlightTokens(this.engine.turn, validMoves);
+      this.updateUI();
+    }
+  }
+
+  // ===== MOVE TOKEN (splits local broadcast from remote receive) =====
+  // `broadcast` = true means I did this move locally and need to tell remote
+  doMoveToken(tokenId, broadcast) {
     const moveRes = this.engine.moveToken(tokenId);
     if (!moveRes) return;
 
-    if (this.peerMgr && this.isOnlineMode) this.peerMgr.send('MOVE_TOKEN', { tokenId });
+    // Only send to remote if this is a LOCAL action
+    if (broadcast && this.peerMgr && this.isOnlineMode) {
+      this.peerMgr.send('MOVE_TOKEN', { tokenId });
+    }
 
     const coords = moveRes.trajectory.map(pos => {
       if (pos.type === 'TRACK') return this.board.trackPositions[pos.idx];
@@ -338,8 +336,10 @@ class App {
           try { soundManager.playCapture(); } catch(e){}
           const cap = moveRes.capturedToken;
           const baseSpot = this.board.basePositions[cap.playerIdx][cap.tokenId];
-          this.tokens.tokens[cap.playerIdx][cap.tokenId].mesh.position.set(baseSpot.x, baseSpot.y, baseSpot.z);
-          this.tokens.tokens[cap.playerIdx][cap.tokenId].currentPos = baseSpot;
+          if (this.tokens.tokens[cap.playerIdx][cap.tokenId]) {
+            this.tokens.tokens[cap.playerIdx][cap.tokenId].mesh.position.set(baseSpot.x, baseSpot.y, baseSpot.z);
+            this.tokens.tokens[cap.playerIdx][cap.tokenId].currentPos = baseSpot;
+          }
         }
 
         this.tokens.highlightTokens(-1, []);
@@ -353,11 +353,13 @@ class App {
     }
   }
 
+  // ===== CLICK ON 3D TOKEN =====
   onPointerDown(event) {
-    const currentActivePlayer = this.isOnlineMode ? this.myPlayerIdx : this.engine.turn;
-    if (this.engine.turn !== currentActivePlayer || !this.engine.diceRolled) return;
+    // Only allow clicking tokens if it's my turn AND dice has been rolled
+    if (this.isOnlineMode && this.engine.turn !== this.myPlayerIdx) return;
+    if (!this.engine.diceRolled) return;
 
-    const validMoves = this.getValidTokenMovesForCurrentTurn();
+    const validMoves = this.engine.getValidTokenMoves();
     if (validMoves.length === 0) return;
 
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -365,15 +367,15 @@ class App {
 
     if (this.raycaster && this.camera && this.tokens) {
       this.raycaster.setFromCamera(this.mouse, this.camera);
-      const meshesToIntersect = [];
+      const meshes = [];
 
       validMoves.forEach(tIdx => {
         if (this.tokens.tokens[this.engine.turn][tIdx]) {
-          meshesToIntersect.push(this.tokens.tokens[this.engine.turn][tIdx].mesh);
+          meshes.push(this.tokens.tokens[this.engine.turn][tIdx].mesh);
         }
       });
 
-      const intersects = this.raycaster.intersectObjects(meshesToIntersect, true);
+      const intersects = this.raycaster.intersectObjects(meshes, true);
 
       if (intersects.length > 0) {
         let obj = intersects[0].object;
@@ -382,39 +384,58 @@ class App {
         }
 
         const playerTokens = this.tokens.tokens[this.engine.turn];
-        const clickedTokenIndex = playerTokens.findIndex(t => t.mesh === obj || t.mesh === obj.parent);
+        const clickedIdx = playerTokens.findIndex(t => t.mesh === obj || t.mesh === obj.parent);
 
-        if (clickedTokenIndex !== -1 && validMoves.includes(clickedTokenIndex)) {
-          this.handleMoveToken(clickedTokenIndex);
+        if (clickedIdx !== -1 && validMoves.includes(clickedIdx)) {
+          this.doMoveToken(clickedIdx, true); // true = broadcast to remote
         }
       }
     }
   }
 
-  getValidTokenMovesForCurrentTurn() {
-    return this.engine.getValidTokenMoves();
-  }
-
+  // ===== RECEIVE NETWORK PACKETS FROM REMOTE PLAYER =====
   handleNetworkPacket(packet) {
     const { action, payload } = packet;
 
     if (action === 'DICE_ROLL') {
+      // Remote player rolled dice — apply to our engine
       this.engine.diceValue = payload.val;
       this.engine.diceRolled = true;
+
       try { soundManager.playDiceRoll(); } catch(e){}
 
       if (this.dice) {
         this.dice.roll(payload.val, () => {
+          // After animation, process the remote player's valid moves
+          const validMoves = this.engine.getValidTokenMoves();
+
+          if (validMoves.length === 0) {
+            // Remote player has no moves — we wait for their PASS_TURN message
+            // (They will send it from their side)
+          } else if (validMoves.length === 1) {
+            // Remote has exactly 1 valid move — they will auto-move and send MOVE_TOKEN
+            // We just wait for it
+          } else {
+            // Remote has multiple choices — they will click and send MOVE_TOKEN
+            // We just wait for it
+          }
+
           this.updateUI();
         });
       }
+
     } else if (action === 'MOVE_TOKEN') {
-      this.handleMoveToken(payload.tokenId);
+      // Remote player moved a token — apply to our engine (broadcast=false: don't echo back!)
+      this.doMoveToken(payload.tokenId, false);
+
     } else if (action === 'PASS_TURN') {
+      // Remote player passed turn — apply to our engine
       this.engine.passTurn();
       this.updateUI();
+
     } else if (action === 'REACTION') {
       this.triggerReaction(payload.type, false);
+
     } else if (action === 'CHAT_MSG') {
       try { soundManager.playRoseReaction(); } catch(e){}
       if (this.particles) this.particles.triggerFullKissExplosion('💖');
@@ -427,33 +448,23 @@ class App {
       this.peerMgr.send('REACTION', { type });
     }
 
-    if (type === 'rose') {
-      try { soundManager.playRoseReaction(); } catch(e){}
-      if (this.particles) {
-        this.particles.triggerRoseShower();
-        this.particles.triggerLoveBurst('#ff1a40');
-        this.particles.triggerFullKissExplosion('🌹');
-      }
-      this.showLovePopup('🌹 Rose Shower Sent To Papri!');
-    } else if (type === 'kiss') {
-      try { soundManager.playKissReaction(); } catch(e){}
-      if (this.particles) {
-        this.particles.triggerLoveBurst('#ff6699');
-        this.particles.triggerFullKissExplosion('💋');
-      }
-      this.showLovePopup('💋 Kisses Filling Papri\'s Screen!');
-    } else if (type === 'hug') {
-      try { soundManager.playKissReaction(); } catch(e){}
-      if (this.particles) this.particles.triggerFullKissExplosion('🤗');
-      this.showLovePopup('🤗 Warm Hugs Sent To Papri!');
-    } else if (type === 'love') {
-      try { soundManager.playRoseReaction(); } catch(e){}
-      if (this.particles) {
-        this.particles.triggerLoveBurst('#ff0055');
-        this.particles.triggerFullKissExplosion('❤️');
-      }
-      this.showLovePopup('❤️ Full Screen Love For Papri!');
+    const effects = {
+      rose:  { sound: 'playRoseReaction', emoji: '🌹', msg: '🌹 Rose Shower!', burst: '#ff1a40', shower: true },
+      kiss:  { sound: 'playKissReaction', emoji: '💋', msg: '💋 Kisses!', burst: '#ff6699' },
+      hug:   { sound: 'playKissReaction', emoji: '🤗', msg: '🤗 Warm Hugs!' },
+      love:  { sound: 'playRoseReaction', emoji: '❤️', msg: '❤️ Full Love!', burst: '#ff0055' }
+    };
+
+    const fx = effects[type];
+    if (!fx) return;
+
+    try { soundManager[fx.sound](); } catch(e){}
+    if (this.particles) {
+      if (fx.shower) this.particles.triggerRoseShower();
+      if (fx.burst) this.particles.triggerLoveBurst(fx.burst);
+      this.particles.triggerFullKissExplosion(fx.emoji);
     }
+    this.showLovePopup(fx.msg);
   }
 
   showLovePopup(msg) {
@@ -461,23 +472,25 @@ class App {
     popup.className = 'love-popup-msg';
     popup.innerText = msg;
     document.body.appendChild(popup);
-
     setTimeout(() => popup.remove(), 2500);
   }
 
-  updateVoiceHUD(status, msg) {
+  updateVoiceHUD(status) {
     const hud = document.getElementById('voice-status-text');
     if (!hud) return;
-    if (status === 'connected') hud.innerText = 'Online Connected';
-    else if (status === 'voice_active') hud.innerText = 'Voice Call Live 🎙️';
-    else if (status === 'mic_denied') hud.innerText = 'Voice (Muted)';
-    else if (status === 'disconnected') hud.innerText = 'Disconnected';
+    const labels = {
+      connected: 'Online Connected ✅',
+      voice_active: 'Voice Call Live 🎙️',
+      mic_ready: 'Mic Ready',
+      mic_denied: 'Voice (Muted)',
+      disconnected: 'Disconnected'
+    };
+    hud.innerText = labels[status] || status;
   }
 
   updateUI() {
     const turn = this.engine.turn;
-    const currentActivePlayer = this.isOnlineMode ? this.myPlayerIdx : turn;
-    const isMyTurn = (turn === currentActivePlayer);
+    const isMyTurn = this.isOnlineMode ? (turn === this.myPlayerIdx) : true;
 
     const p0 = document.getElementById('player-card-0');
     const p1 = document.getElementById('player-card-1');
@@ -485,18 +498,20 @@ class App {
     if (p1) p1.classList.toggle('active-turn', turn === 1);
 
     const rollBtn = document.getElementById('btn-roll-dice');
-    if (rollBtn) rollBtn.disabled = !isMyTurn || this.engine.diceRolled || this.engine.winner !== null;
+    if (rollBtn) {
+      rollBtn.disabled = !isMyTurn || this.engine.diceRolled || this.engine.winner !== null;
+    }
 
     const banner = document.getElementById('turn-banner-text');
     if (banner) {
       if (this.engine.winner !== null) {
-        banner.innerText = 'Game Over!';
+        banner.innerText = '🎉 Game Over!';
       } else if (isMyTurn) {
-        const playerName = turn === 0 ? "Papri ❤️" : "My Love 💖";
-        banner.innerText = `❤️ ${playerName}'s Turn! Roll the Dice 🎲`;
+        const name = turn === 0 ? 'Papri ❤️' : 'My Love 💖';
+        banner.innerText = `❤️ ${name}'s Turn! Roll the Dice 🎲`;
         banner.style.color = '#ff6699';
       } else {
-        banner.innerText = `Waiting for Partner's roll...`;
+        banner.innerText = "Waiting for Partner's roll...";
         banner.style.color = '#ffffff';
       }
     }
@@ -508,7 +523,7 @@ class App {
 
     const winModal = document.getElementById('win-modal');
     const winnerText = document.getElementById('win-winner-text');
-    
+
     if (winnerText) winnerText.innerText = winnerIdx === 0 ? 'Papri Wins! 🌹' : 'My Love Wins! 💖';
     if (winModal) {
       winModal.style.display = 'flex';
