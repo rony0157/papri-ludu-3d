@@ -89,12 +89,12 @@
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">Pass & Play / Live P2P</span></div>
-        <button class="bi" id="bs">🔗 Share Link</button>
+        <div class="vh"><span class="dot"></span><span id="vs">2-Player Room</span></div>
+        <button class="bi" id="bs">🔗 Share Room Link</button>
       </div>
     </header>
     <div class="footer">
-      <div class="pc ia" id="p0"><div class="av">🌹</div><div class="pi"><h3>Papri ❤️</h3><p>Red</p></div></div>
+      <div class="pc ia" id="p0"><div class="av">🌹</div><div class="pi"><h3>Papri ❤️</h3><p>Red Tokens</p></div></div>
       <div class="cc ia">
         <div class="mb">
           <button class="bm" data-m="I love you! ❤️">💌 Love</button>
@@ -115,7 +115,7 @@
         <div class="token-picker-bar" id="tp-bar"></div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
-      <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
+      <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green Tokens</p></div></div>
     </div>
   </div>
 
@@ -406,20 +406,33 @@ class App {
   constructor() {
     this.eng = new Engine();
 
+    // 1. Room & Player URL parameters
     const urlParams = new URLSearchParams(location.search);
-    const pParam = urlParams.get('player');
-    this.myId = pParam !== null ? parseInt(pParam, 10) : null;
+    let room = urlParams.get('room');
+    let playerRole = urlParams.get('player');
 
-    this.isLivePeerConnected = false; // Only true when an ACTUAL P2P or WebSocket connection is open
+    if (!room) {
+      // Host: Create room
+      room = 'papri-' + Math.random().toString(36).substring(2, 7);
+      playerRole = '0';
+      history.replaceState(null, '', `?room=${room}&player=0`);
+    } else if (playerRole === null) {
+      // Auto assign player 1 if joining via room link
+      playerRole = '1';
+      history.replaceState(null, '', `?room=${room}&player=1`);
+    }
+
+    this.roomId = room;
+    this.myId = parseInt(playerRole, 10);
     this.autoMoveTimer = null;
 
+    // 2. BroadcastChannel with Room Name so 2 tabs on same PC sync 100% instantly!
     try {
-      this.bc = new BroadcastChannel('papri_ludu_channel');
-      this.bc.onmessage = (e) => {
-        this.onMsg(e.data);
-      };
+      this.bc = new BroadcastChannel(`ludu_room_${this.roomId}`);
+      this.bc.onmessage = (e) => this.onMsg(e.data);
     } catch(e) { this.bc = null; }
 
+    // 3. 3D Setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x160d29);
     this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
@@ -448,11 +461,12 @@ class App {
     this.ui();
     this.animate();
 
+    // Buttons
     document.getElementById('rd').addEventListener('click', () => this.rollDice());
     document.getElementById('bs').addEventListener('click', () => {
-      const url = location.origin + location.pathname;
-      navigator.clipboard.writeText(url).catch(()=>{});
-      alert('Room Link copied! Send to Papri:\n' + url);
+      const shareUrl = `${location.origin}${location.pathname}?room=${this.roomId}&player=1`;
+      navigator.clipboard.writeText(shareUrl).catch(()=>{});
+      alert('Room Link for Papri Copied!\n\nSend this link to Papri:\n' + shareUrl);
     });
     document.querySelectorAll('.bm').forEach(b => b.addEventListener('click', e => {
       const m = e.target.getAttribute('data-m'); if(m) this.chat(m);
@@ -476,64 +490,33 @@ class App {
 
   initNetwork() {
     const st = document.getElementById('status');
-    const ROOM_ID = 'papri-love-3d-main-room';
-
-    const urlParams = new URLSearchParams(location.search);
-    const wsParam = urlParams.get('ws');
-
-    if (wsParam) {
-      try {
-        this.ws = new WebSocket(wsParam);
-        this.ws.onopen = () => { st.textContent = '🔌 WebSocket Connected'; st.className = ''; };
-        this.ws.onmessage = (e) => {
-          const d = JSON.parse(e.data);
-          if (d.action === 'ASSIGNED') {
-            if (this.myId === null) this.myId = d.payload.playerId;
-            this.isLivePeerConnected = true;
-          }
-          this.onMsg(d);
-        };
-        return;
-      } catch(e) {}
-    }
+    st.textContent = this.myId === 0 
+      ? `🌹 You are Papri ❤️ (Red) | Room: ${this.roomId}`
+      : `💖 You are My Love 💖 (Green) | Room: ${this.roomId}`;
 
     if (window.Peer) {
       try {
-        this.peer = new Peer(ROOM_ID, { debug: 1 });
-
-        this.peer.on('open', (id) => {
-          if (this.myId === null) this.myId = 0;
-          st.textContent = '🌹 Papri ❤️ (Red) — Ready to Play!';
-          st.className = '';
-          this.ui();
-
+        if (this.myId === 0) {
+          // Host
+          this.peer = new Peer(this.roomId, { debug: 1 });
+          this.peer.on('open', () => this.ui());
           this.peer.on('connection', (c) => {
             this.conn = c;
-            this.isLivePeerConnected = true;
             this.setupConn(c);
-            st.textContent = '🟢 Connected with My Love!';
+            st.textContent = `🟢 Connected Live with My Love!`;
             this.popup('My Love Connected! Let\'s play! ❤️');
           });
-        });
-
-        this.peer.on('error', (err) => {
-          if (err.type === 'unavailable-id') {
-            if (this.peer) this.peer.destroy();
-            this.peer = new Peer({ debug: 1 });
-            this.peer.on('open', () => {
-              if (this.myId === null) this.myId = 1;
-              this.isLivePeerConnected = true;
-              st.textContent = '💖 My Love (Green) — Connected!';
-              this.conn = this.peer.connect(ROOM_ID, { reliable: true });
-              this.setupConn(this.conn);
-              this.ui();
-            });
-          }
-        });
-      } catch(e) {
-        st.textContent = '✨ Ready to Play! (Pass & Play / 2-Tab)';
-        this.ui();
-      }
+        } else {
+          // Client
+          this.peer = new Peer({ debug: 1 });
+          this.peer.on('open', () => {
+            this.conn = this.peer.connect(this.roomId, { reliable: true });
+            this.setupConn(this.conn);
+            st.textContent = `🟢 Connected to Papri's Room!`;
+            this.popup('Connected to Papri! Let\'s play! 💖');
+          });
+        }
+      } catch(e) {}
     }
   }
 
@@ -542,7 +525,6 @@ class App {
     c.on('open', () => {
       st.textContent = '🟢 Connected Live!';
       st.className = '';
-      this.isLivePeerConnected = true;
       this.ui();
     });
     c.on('data', (d) => this.onMsg(d));
@@ -572,15 +554,11 @@ class App {
     const msg = { action, payload, sender: this.myId };
     if (this.bc) try { this.bc.postMessage(msg); } catch(e) {}
     if (this.conn && this.conn.open) try { this.conn.send(msg); } catch(e) {}
-    if (this.ws && this.ws.readyState === 1) try { this.ws.send(JSON.stringify(msg)); } catch(e) {}
   }
 
   rollDice() {
-    // Only enforce player turn restrictions IF a live P2P/WebSocket connection is active!
-    // In local / solo / 1-tab testing, ALWAYS ALLOW ROLLING for whichever turn it is!
-    if (this.isLivePeerConnected && this.myId !== null && this.eng.turn !== this.myId) {
-      return;
-    }
+    // Check if it's my turn
+    if (this.eng.turn !== this.myId) return;
 
     if (this.eng.dr && this.eng.winner === null) {
       const vm = this.eng.validMoves();
@@ -642,7 +620,7 @@ class App {
       } else {
         this.tokens.highlight(this.eng.turn, vm);
         this.render2DTokenPicker(vm);
-        this.popup('👆 Tap a token on 3D board OR click button below to move!');
+        this.popup('👆 Tap token or click button below to move!');
         this.ui();
 
         this.autoMoveTimer = setTimeout(() => {
@@ -693,13 +671,16 @@ class App {
     });
     this.tokens.animMove(r.pi, tid, coords, () => {
       if (r.cap) {
+        try { this.parts.kiss('💥'); } catch(e){}
         const b = this.board.base[r.cap.pi][r.cap.ti];
         const t = this.tokens.tk[r.cap.pi][r.cap.ti];
         if (t) { t.mesh.position.set(b.x,b.y,b.z); t.pos = b; }
+        this.popup(`⚔️ TOKEN CAPTURED! ${r.pi === 0 ? 'Papri' : 'My Love'} gets Extra Turn! 🎲`);
       }
+
       this.tokens.highlight(-1,[]);
 
-      if (r.ext && r.winner === null) {
+      if (r.ext && r.winner === null && !r.cap) {
         this.popup('✨ EXTRA TURN! Roll Again! 🎲');
       }
 
@@ -708,7 +689,7 @@ class App {
   }
 
   click(e) {
-    if (this.isLivePeerConnected && this.myId !== null && this.eng.turn !== this.myId) return;
+    if (this.eng.turn !== this.myId) return;
     if (!this.eng.dr) return;
 
     const vm = this.eng.validMoves(); if (!vm.length) return;
@@ -738,7 +719,7 @@ class App {
   }
   ui() {
     const t = this.eng.turn;
-    const isMyTurn = (!this.isLivePeerConnected || this.myId === null) ? true : (t === this.myId);
+    const isMyTurn = (t === this.myId);
 
     const p0=document.getElementById('p0'),p1=document.getElementById('p1');
     if(p0) p0.classList.toggle('on',t===0);
