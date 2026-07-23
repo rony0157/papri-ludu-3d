@@ -139,7 +139,8 @@ class App {
     if (roomParam) {
       const input = document.getElementById('input-room-code');
       if (input) input.value = roomParam;
-      this.joinRoom(roomParam);
+      // Delay joining by 300ms until 3D engine is fully loaded & rendered on screen!
+      setTimeout(() => this.joinRoom(roomParam), 300);
     }
   }
 
@@ -177,7 +178,7 @@ class App {
   }
 
   createRoom() {
-    this.hideModal(); // HIDE MODAL INSTANTLY ON LINE 1!
+    this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
     this.myPlayerIdx = 0; // Host is Papri (Red)
@@ -201,7 +202,7 @@ class App {
       const input = document.getElementById('input-room-code');
       code = input ? input.value : '';
     }
-    this.hideModal(); // HIDE MODAL INSTANTLY ON LINE 1!
+    this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
     this.myPlayerIdx = 1; // Client is My Love (Green)
