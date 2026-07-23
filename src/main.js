@@ -14,6 +14,7 @@ class App {
     this.engine = new LuduEngine();
     this.myPlayerIdx = 0; // Default 0 (Host / Papri)
     this.autoStartSeconds = 5;
+    this.isOnlineMode = false;
     
     // 1. Call UI listeners FIRST so buttons work immediately
     this.initUIListeners();
@@ -91,14 +92,13 @@ class App {
     window.addEventListener('resize', () => this.onResize());
   }
 
-  // Camera aspect calculation fitting iPhone portrait screens
   updateCameraAspect() {
     if (!this.camera || !this.renderer) return;
     const aspect = window.innerWidth / window.innerHeight;
     this.camera.aspect = aspect;
 
     if (aspect < 1.0) {
-      // iPhone / Mobile Portrait: move camera further back so entire 13.6u 3D board fits!
+      // iPhone / Mobile Portrait
       const dist = 14 / aspect;
       this.camera.position.set(0, dist, dist);
     } else {
@@ -143,7 +143,6 @@ class App {
     }
   }
 
-  // Auto-Start Timer (Guarantees game entry within 5 seconds)
   startAutoStartCountdown() {
     const timerText = document.getElementById('auto-start-timer');
     if (!timerText) return;
@@ -168,7 +167,7 @@ class App {
     }
   }
 
-  // Instant Game Start Mode
+  // Instant Game Start Mode (Pass & Play on 1 screen OR Online)
   startGameInstant() {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
@@ -180,11 +179,12 @@ class App {
   async createRoom() {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
+    this.isOnlineMode = true;
+    this.myPlayerIdx = 0; // Host is Papri (Red)
     this.updateUI();
 
     if (this.peerMgr) {
       const res = await this.peerMgr.init(null);
-      this.myPlayerIdx = 0; // Host is Papri (Red)
       const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
       this.showLovePopup(`Online Room Active! Share Link with Papri`);
     }
@@ -193,12 +193,13 @@ class App {
   async joinRoom(code) {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
+    this.isOnlineMode = true;
+    this.myPlayerIdx = 1; // Client is My Love (Green)
     this.updateUI();
 
     if (this.peerMgr && code) {
       const res = await this.peerMgr.init(code.trim());
-      this.myPlayerIdx = 1; // Client is My Love (Green)
-      this.showLovePopup(`Joined Room with Papri! ❤️`);
+      this.showLovePopup(`Joined Online Room with Papri! ❤️`);
     }
   }
 
@@ -238,7 +239,7 @@ class App {
         const roomId = (this.peerMgr && this.peerMgr.roomId) ? this.peerMgr.roomId : 'papri-love-room';
         const roomUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
         navigator.clipboard.writeText(roomUrl);
-        alert(`Room Link Copied! Share with Papri:\n${roomUrl}`);
+        alert(`Room Link Copied! Send to Papri:\n${roomUrl}`);
       });
     }
 
@@ -267,7 +268,9 @@ class App {
   }
 
   handleRollDice() {
-    if (this.engine.turn !== this.myPlayerIdx || this.engine.diceRolled || this.engine.winner !== null) {
+    const currentActivePlayer = this.isOnlineMode ? this.myPlayerIdx : this.engine.turn;
+
+    if (this.engine.turn !== currentActivePlayer || this.engine.diceRolled || this.engine.winner !== null) {
       return;
     }
 
@@ -275,7 +278,7 @@ class App {
     if (!val) return;
 
     try { soundManager.playDiceRoll(); } catch(e){}
-    if (this.peerMgr) this.peerMgr.send('DICE_ROLL', { val });
+    if (this.peerMgr && this.isOnlineMode) this.peerMgr.send('DICE_ROLL', { val });
 
     if (this.dice) {
       this.dice.roll(val, () => {
@@ -284,7 +287,7 @@ class App {
         if (validMoves.length === 0) {
           setTimeout(() => {
             this.engine.passTurn();
-            if (this.peerMgr) this.peerMgr.send('PASS_TURN', {});
+            if (this.peerMgr && this.isOnlineMode) this.peerMgr.send('PASS_TURN', {});
             this.updateUI();
           }, 800);
         } else if (validMoves.length === 1) {
@@ -301,11 +304,11 @@ class App {
     const moveRes = this.engine.moveToken(tokenId);
     if (!moveRes) return;
 
-    if (this.peerMgr) this.peerMgr.send('MOVE_TOKEN', { tokenId });
+    if (this.peerMgr && this.isOnlineMode) this.peerMgr.send('MOVE_TOKEN', { tokenId });
 
     const coords = moveRes.trajectory.map(pos => {
       if (pos.type === 'TRACK') return this.board.trackPositions[pos.idx];
-      if (pos.type === 'HOME_PATH') return this.board.homePaths[this.engine.turn][pos.idx];
+      if (pos.type === 'HOME_PATH') return this.board.homePaths[moveRes.playerIdx][pos.idx];
       return { x: 0, y: 0.5, z: 0 };
     });
 
@@ -333,9 +336,10 @@ class App {
   }
 
   onPointerDown(event) {
-    if (this.engine.turn !== this.myPlayerIdx || !this.engine.diceRolled) return;
+    const currentActivePlayer = this.isOnlineMode ? this.myPlayerIdx : this.engine.turn;
+    if (this.engine.turn !== currentActivePlayer || !this.engine.diceRolled) return;
 
-    const validMoves = this.engine.getValidTokenMoves();
+    const validMoves = this.getValidTokenMovesForCurrentTurn();
     if (validMoves.length === 0) return;
 
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -346,8 +350,8 @@ class App {
       const meshesToIntersect = [];
 
       validMoves.forEach(tIdx => {
-        if (this.tokens.tokens[this.myPlayerIdx][tIdx]) {
-          meshesToIntersect.push(this.tokens.tokens[this.myPlayerIdx][tIdx].mesh);
+        if (this.tokens.tokens[this.engine.turn][tIdx]) {
+          meshesToIntersect.push(this.tokens.tokens[this.engine.turn][tIdx].mesh);
         }
       });
 
@@ -359,7 +363,7 @@ class App {
           obj = obj.parent;
         }
 
-        const playerTokens = this.tokens.tokens[this.myPlayerIdx];
+        const playerTokens = this.tokens.tokens[this.engine.turn];
         const clickedTokenIndex = playerTokens.findIndex(t => t.mesh === obj || t.mesh === obj.parent);
 
         if (clickedTokenIndex !== -1 && validMoves.includes(clickedTokenIndex)) {
@@ -367,6 +371,10 @@ class App {
         }
       }
     }
+  }
+
+  getValidTokenMovesForCurrentTurn() {
+    return this.engine.getValidTokenMoves();
   }
 
   handleNetworkPacket(packet) {
@@ -397,7 +405,7 @@ class App {
   }
 
   triggerReaction(type, broadcast = false) {
-    if (broadcast && this.peerMgr) {
+    if (broadcast && this.peerMgr && this.isOnlineMode) {
       this.peerMgr.send('REACTION', { type });
     }
 
@@ -450,7 +458,8 @@ class App {
 
   updateUI() {
     const turn = this.engine.turn;
-    const isMyTurn = (turn === this.myPlayerIdx);
+    const currentActivePlayer = this.isOnlineMode ? this.myPlayerIdx : turn;
+    const isMyTurn = (turn === currentActivePlayer);
 
     const p0 = document.getElementById('player-card-0');
     const p1 = document.getElementById('player-card-1');
@@ -465,10 +474,11 @@ class App {
       if (this.engine.winner !== null) {
         banner.innerText = 'Game Over!';
       } else if (isMyTurn) {
-        banner.innerText = `❤️ It's Your Turn! Roll the Dice 🎲`;
+        const playerName = turn === 0 ? "Papri ❤️" : "My Love 💖";
+        banner.innerText = `❤️ ${playerName}'s Turn! Roll the Dice 🎲`;
         banner.style.color = '#ff6699';
       } else {
-        banner.innerText = `Waiting for Papri / Lover's roll...`;
+        banner.innerText = `Waiting for Partner's roll...`;
         banner.style.color = '#ffffff';
       }
     }
