@@ -11,7 +11,7 @@
   </script>
   <style>
     :root {
-      --bg: #0f0a17; --panel: rgba(26, 15, 40, 0.94); --pink: #ff1a53;
+      --bg: #0f0a17; --panel: rgba(26, 15, 40, 0.92); --pink: #ff1a53;
       --pink-l: #ff6699; --green: #00cc88; --text: #fff0f5;
       --glass: rgba(255, 102, 153, 0.35);
     }
@@ -44,15 +44,15 @@
     #status { position:fixed; top:46px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.25); border:1px solid rgba(0,204,136,.6); color:#66ffcc; padding:2px 10px; border-radius:10px; font-size:9px; font-weight:700; pointer-events:none; transition:all .3s; white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.8); }
 
     /* Footer Layout */
-    .footer { display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; margin-bottom:2px; }
+    .footer { display:flex; flex-direction:column; align-items:center; gap:3px; width:100%; margin-bottom:2px; }
 
     .players-bar { display:flex; justify-content:space-between; align-items:center; width:100%; gap:4px; }
-    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:4px 8px; border-radius:12px; display:flex; align-items:center; gap:5px; transition:all .3s; flex:1; max-width:48%; }
-    .pc.on { border-color:var(--pink); box-shadow:0 0 16px rgba(255,26,83,.7); transform:translateY(-1px); }
-    .av { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:12px; border:2px solid #fff; flex-shrink:0; }
+    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:3px 6px; border-radius:10px; display:flex; align-items:center; gap:4px; transition:all .3s; flex:1; max-width:48%; }
+    .pc.on { border-color:var(--pink); box-shadow:0 0 14px rgba(255,26,83,.7); transform:translateY(-1px); }
+    .av { width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:11px; border:2px solid #fff; flex-shrink:0; }
     .pi h3 { font-size:10px; font-weight:800; white-space:nowrap; } .pi p { font-size:8px; opacity:.85; }
 
-    .cc { display:flex; flex-direction:column; align-items:center; gap:3px; width:100%; }
+    .cc { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; }
     
     .mb { display:flex; gap:3px; overflow-x:auto; max-width:96vw; padding:2px 4px; background:var(--panel); backdrop-filter:blur(10px); border-radius:10px; border:1px solid var(--glass); }
     .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:9px; font-weight:600; padding:2px 6px; border-radius:6px; cursor:pointer; white-space:nowrap; }
@@ -62,8 +62,8 @@
 
     /* Dice Box & Button */
     .dice-container { display:flex; align-items:center; gap:8px; }
-    .dice-val-box { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:20px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 12px rgba(255,26,83,.6); }
-    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:13px; font-weight:800; padding:9px 24px; border:none; border-radius:20px; cursor:pointer; box-shadow:0 6px 18px rgba(255,26,83,.6); transition:all .2s; }
+    .dice-val-box { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:18px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 12px rgba(255,26,83,.6); }
+    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:13px; font-weight:800; padding:8px 22px; border:none; border-radius:18px; cursor:pointer; box-shadow:0 6px 18px rgba(255,26,83,.6); transition:all .2s; }
     #rd:disabled { opacity:.4; cursor:not-allowed; transform:none; }
     #tb { font-size:11px; font-weight:800; text-shadow:0 2px 4px rgba(0,0,0,.9); text-align:center; }
 
@@ -448,14 +448,14 @@ class App {
     this.scene.background = new THREE.Color(0x160d29);
     this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
     
-    // Camera FOV and positioning for phone display optimization
+    // Camera FOV 50
     this.cam = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
     this.ren = new THREE.WebGLRenderer({antialias:true,alpha:false});
     this.ren.setSize(innerWidth,innerHeight);
     this.ren.setPixelRatio(Math.min(devicePixelRatio,2));
     document.getElementById('cv').appendChild(this.ren.domElement);
 
-    // High brightness lighting so 3D board is crystal clear on mobile
+    // High brightness lighting
     this.scene.add(new THREE.AmbientLight(0xfff0f5, 1.6));
     const sun = new THREE.DirectionalLight(0xfff0fa, 1.8); sun.position.set(6,14,8); this.scene.add(sun);
     const pk = new THREE.PointLight(0xff1a53, 2.0, 16); pk.position.set(-6,5,-6); this.scene.add(pk);
@@ -494,13 +494,21 @@ class App {
   fitCam() {
     const a = innerWidth / innerHeight;
     this.cam.aspect = a;
+    
+    // Mathematically calculated camera distance so 14.5x14.5 board fits 100% inside screen boundaries!
     if (a < 1) { 
-      // Mobile Phone Viewport fit: position camera so 3D Ludo Board fills upper 65% of screen BIG and BOLD!
-      this.cam.position.set(0, 11.8, 9.2);
+      // Portrait phone mode: calculate distance based on horizontal aspect to prevent cutting off left/right/top/bottom!
+      const d = Math.max(16, 14.8 / a);
+      const py = d * 0.78;
+      const pz = d * 0.62;
+      this.cam.position.set(0, py, pz);
+      this.cam.lookAt(0, -1.2, 0); // Tilt slightly down so board sits in upper-center of screen
     } else {
-      this.cam.position.set(0, 10.5, 10.5);
+      // Landscape desktop
+      this.cam.position.set(0, 11, 11);
+      this.cam.lookAt(0, 0, 0);
     }
-    this.cam.lookAt(0, 0, 0);
+
     this.cam.updateProjectionMatrix();
     this.ren.setSize(innerWidth, innerHeight);
   }
@@ -766,7 +774,7 @@ class App {
     const s=t*.001;
     this.parts.update(s);
     this.cam.position.x=Math.sin(s*.3)*.4;
-    this.cam.lookAt(0,0,0);
+    this.cam.lookAt(0,-1.2,0);
     this.ren.render(this.scene,this.cam);
   }
 }
