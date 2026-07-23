@@ -14,10 +14,22 @@ class App {
     this.engine = new LuduEngine();
     this.myPlayerIdx = 0; // Default 0 (Host / Papri)
     
-    this.initThree();
-    this.initGame3D();
-    this.initNetwork();
+    // Call UI listeners FIRST so buttons work immediately even if WebGL is initializing!
     this.initUIListeners();
+
+    try {
+      this.initThree();
+      this.initGame3D();
+    } catch (err) {
+      console.warn('Three.js Init Warning:', err);
+    }
+
+    try {
+      this.initNetwork();
+    } catch (err) {
+      console.warn('Network Init Warning:', err);
+    }
+
     this.animate();
   }
 
@@ -41,7 +53,10 @@ class App {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.container.appendChild(this.renderer.domElement);
+    
+    if (this.container) {
+      this.container.appendChild(this.renderer.domElement);
+    }
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.85);
@@ -75,7 +90,9 @@ class App {
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
-    this.container.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    if (this.container) {
+      this.container.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    }
   }
 
   // 3. Initialize PeerJS P2P Network
@@ -89,77 +106,94 @@ class App {
     const roomParam = urlParams.get('room');
 
     if (roomParam) {
-      document.getElementById('input-room-code').value = roomParam;
+      const input = document.getElementById('input-room-code');
+      if (input) input.value = roomParam;
       this.joinRoom(roomParam);
+    }
+  }
+
+  // Hide Modal Instantly & Start
+  hideModal() {
+    const modal = document.getElementById('room-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.add('hidden');
     }
   }
 
   // Instant Game Start / Play Together
   startGameInstant() {
-    document.getElementById('room-modal').classList.add('hidden');
-    soundManager.startRomanticMusic();
+    this.hideModal();
+    try { soundManager.startRomanticMusic(); } catch(e){}
     this.updateUI();
     this.showLovePopup(`Welcome Papri & Lover! ❤️ Game Started!`);
-    
-    // Background init peer connection
-    this.peerMgr.init(null);
+    if (this.peerMgr) this.peerMgr.init(null);
   }
 
   async createRoom() {
-    document.getElementById('room-modal').classList.add('hidden');
-    soundManager.startRomanticMusic();
+    this.hideModal();
+    try { soundManager.startRomanticMusic(); } catch(e){}
     this.updateUI();
 
-    const res = await this.peerMgr.init(null);
-    this.myPlayerIdx = 0; // Host is Papri (Red)
-
-    const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
-    this.showLovePopup(`Room Created! Code: ${res.roomId}`);
+    if (this.peerMgr) {
+      const res = await this.peerMgr.init(null);
+      this.myPlayerIdx = 0; // Host is Papri (Red)
+      const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
+      this.showLovePopup(`Room Created! Share Link with Papri`);
+    }
   }
 
   async joinRoom(code) {
-    if (!code) {
-      alert('Please enter a valid room code!');
-      return;
-    }
-    document.getElementById('room-modal').classList.add('hidden');
-    soundManager.startRomanticMusic();
+    this.hideModal();
+    try { soundManager.startRomanticMusic(); } catch(e){}
     this.updateUI();
 
-    const res = await this.peerMgr.init(code.trim());
-    this.myPlayerIdx = 1; // Client is My Love (Green)
-    this.showLovePopup(`Joined Room with Papri! ❤️`);
+    if (this.peerMgr && code) {
+      const res = await this.peerMgr.init(code.trim());
+      this.myPlayerIdx = 1; // Client is My Love (Green)
+      this.showLovePopup(`Joined Room with Papri! ❤️`);
+    }
   }
 
   // 4. UI Listeners
   initUIListeners() {
-    document.getElementById('btn-start-game').addEventListener('click', () => this.startGameInstant());
-    document.getElementById('btn-create-room').addEventListener('click', () => this.createRoom());
-    document.getElementById('btn-join-room').addEventListener('click', () => {
-      const code = document.getElementById('input-room-code').value;
+    window.startGameDirect = () => this.startGameInstant();
+
+    const btnStart = document.getElementById('btn-start-game');
+    if (btnStart) btnStart.addEventListener('click', () => this.startGameInstant());
+
+    const btnCreate = document.getElementById('btn-create-room');
+    if (btnCreate) btnCreate.addEventListener('click', () => this.createRoom());
+
+    const btnJoin = document.getElementById('btn-join-room');
+    if (btnJoin) btnJoin.addEventListener('click', () => {
+      const input = document.getElementById('input-room-code');
+      const code = input ? input.value : '';
       this.joinRoom(code);
     });
 
-    document.getElementById('btn-roll-dice').addEventListener('click', () => this.handleRollDice());
+    const btnRoll = document.getElementById('btn-roll-dice');
+    if (btnRoll) btnRoll.addEventListener('click', () => this.handleRollDice());
 
-    document.getElementById('btn-toggle-mic').addEventListener('click', () => {
-      const isLive = this.peerMgr.toggleMic();
-      document.getElementById('btn-toggle-mic').innerHTML = isLive
-        ? '🎙️ Mic On'
-        : '🔇 Mic Off';
-    });
+    const btnMic = document.getElementById('btn-toggle-mic');
+    if (btnMic) {
+      btnMic.addEventListener('click', () => {
+        if (this.peerMgr) {
+          const isLive = this.peerMgr.toggleMic();
+          btnMic.innerHTML = isLive ? '🎙️ Mic On' : '🔇 Mic Off';
+        }
+      });
+    }
 
-    document.getElementById('btn-share-room').addEventListener('click', () => {
-      if (this.peerMgr.roomId) {
-        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${this.peerMgr.roomId}`;
+    const btnShare = document.getElementById('btn-share-room');
+    if (btnShare) {
+      btnShare.addEventListener('click', () => {
+        const roomId = (this.peerMgr && this.peerMgr.roomId) ? this.peerMgr.roomId : 'papri-love-room';
+        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
         navigator.clipboard.writeText(roomUrl);
         alert(`Room Link Copied! Share with Papri:\n${roomUrl}`);
-      } else {
-        const fallbackUrl = `${window.location.origin}${window.location.pathname}?room=papri-love-room`;
-        navigator.clipboard.writeText(fallbackUrl);
-        alert(`Room Link Copied! Share with Papri:\n${fallbackUrl}`);
-      }
-    });
+      });
+    }
 
     // Preset Love Messages Buttons
     document.querySelectorAll('.btn-msg').forEach(btn => {
@@ -179,9 +213,9 @@ class App {
   }
 
   sendLoveMessage(msg) {
-    soundManager.playRoseReaction();
+    try { soundManager.playRoseReaction(); } catch(e){}
     this.showLovePopup(msg);
-    this.peerMgr.send('CHAT_MSG', { msg });
+    if (this.peerMgr) this.peerMgr.send('CHAT_MSG', { msg });
   }
 
   handleRollDice() {
@@ -192,32 +226,34 @@ class App {
     const val = this.engine.rollDice();
     if (!val) return;
 
-    soundManager.playDiceRoll();
-    this.peerMgr.send('DICE_ROLL', { val });
+    try { soundManager.playDiceRoll(); } catch(e){}
+    if (this.peerMgr) this.peerMgr.send('DICE_ROLL', { val });
 
-    this.dice.roll(val, () => {
-      const validMoves = this.engine.getValidTokenMoves();
+    if (this.dice) {
+      this.dice.roll(val, () => {
+        const validMoves = this.engine.getValidTokenMoves();
 
-      if (validMoves.length === 0) {
-        setTimeout(() => {
-          this.engine.passTurn();
-          this.peerMgr.send('PASS_TURN', {});
+        if (validMoves.length === 0) {
+          setTimeout(() => {
+            this.engine.passTurn();
+            if (this.peerMgr) this.peerMgr.send('PASS_TURN', {});
+            this.updateUI();
+          }, 800);
+        } else if (validMoves.length === 1) {
+          this.handleMoveToken(validMoves[0]);
+        } else {
+          if (this.tokens) this.tokens.highlightTokens(this.engine.turn, validMoves);
           this.updateUI();
-        }, 800);
-      } else if (validMoves.length === 1) {
-        this.handleMoveToken(validMoves[0]);
-      } else {
-        this.tokens.highlightTokens(this.engine.turn, validMoves);
-        this.updateUI();
-      }
-    });
+        }
+      });
+    }
   }
 
   handleMoveToken(tokenId) {
     const moveRes = this.engine.moveToken(tokenId);
     if (!moveRes) return;
 
-    this.peerMgr.send('MOVE_TOKEN', { tokenId });
+    if (this.peerMgr) this.peerMgr.send('MOVE_TOKEN', { tokenId });
 
     const coords = moveRes.trajectory.map(pos => {
       if (pos.type === 'TRACK') return this.board.trackPositions[pos.idx];
@@ -225,25 +261,27 @@ class App {
       return { x: 0, y: 0.5, z: 0 };
     });
 
-    soundManager.playStep();
+    try { soundManager.playStep(); } catch(e){}
 
-    this.tokens.animateMove(moveRes.playerIdx, tokenId, coords, () => {
-      if (moveRes.capturedToken) {
-        soundManager.playCapture();
-        const cap = moveRes.capturedToken;
-        const baseSpot = this.board.basePositions[cap.playerIdx][cap.tokenId];
-        this.tokens.tokens[cap.playerIdx][cap.tokenId].mesh.position.set(baseSpot.x, baseSpot.y, baseSpot.z);
-        this.tokens.tokens[cap.playerIdx][cap.tokenId].currentPos = baseSpot;
-      }
+    if (this.tokens) {
+      this.tokens.animateMove(moveRes.playerIdx, tokenId, coords, () => {
+        if (moveRes.capturedToken) {
+          try { soundManager.playCapture(); } catch(e){}
+          const cap = moveRes.capturedToken;
+          const baseSpot = this.board.basePositions[cap.playerIdx][cap.tokenId];
+          this.tokens.tokens[cap.playerIdx][cap.tokenId].mesh.position.set(baseSpot.x, baseSpot.y, baseSpot.z);
+          this.tokens.tokens[cap.playerIdx][cap.tokenId].currentPos = baseSpot;
+        }
 
-      this.tokens.highlightTokens(-1, []);
+        this.tokens.highlightTokens(-1, []);
 
-      if (moveRes.winner !== null) {
-        this.handleVictory(moveRes.winner);
-      } else {
-        this.updateUI();
-      }
-    });
+        if (moveRes.winner !== null) {
+          this.handleVictory(moveRes.winner);
+        } else {
+          this.updateUI();
+        }
+      });
+    }
   }
 
   onPointerDown(event) {
@@ -255,26 +293,30 @@ class App {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-    this.raycaster.setFromCamera(this.mouse, this.camera);
-    const meshesToIntersect = [];
+    if (this.raycaster && this.camera && this.tokens) {
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const meshesToIntersect = [];
 
-    validMoves.forEach(tIdx => {
-      meshesToIntersect.push(this.tokens.tokens[this.myPlayerIdx][tIdx].mesh);
-    });
+      validMoves.forEach(tIdx => {
+        if (this.tokens.tokens[this.myPlayerIdx][tIdx]) {
+          meshesToIntersect.push(this.tokens.tokens[this.myPlayerIdx][tIdx].mesh);
+        }
+      });
 
-    const intersects = this.raycaster.intersectObjects(meshesToIntersect, true);
+      const intersects = this.raycaster.intersectObjects(meshesToIntersect, true);
 
-    if (intersects.length > 0) {
-      let obj = intersects[0].object;
-      while (obj.parent && !obj.parent.isGroup) {
-        obj = obj.parent;
-      }
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj.parent && !obj.parent.isGroup) {
+          obj = obj.parent;
+        }
 
-      const playerTokens = this.tokens.tokens[this.myPlayerIdx];
-      const clickedTokenIndex = playerTokens.findIndex(t => t.mesh === obj || t.mesh === obj.parent);
+        const playerTokens = this.tokens.tokens[this.myPlayerIdx];
+        const clickedTokenIndex = playerTokens.findIndex(t => t.mesh === obj || t.mesh === obj.parent);
 
-      if (clickedTokenIndex !== -1 && validMoves.includes(clickedTokenIndex)) {
-        this.handleMoveToken(clickedTokenIndex);
+        if (clickedTokenIndex !== -1 && validMoves.includes(clickedTokenIndex)) {
+          this.handleMoveToken(clickedTokenIndex);
+        }
       }
     }
   }
@@ -285,11 +327,13 @@ class App {
     if (action === 'DICE_ROLL') {
       this.engine.diceValue = payload.val;
       this.engine.diceRolled = true;
-      soundManager.playDiceRoll();
+      try { soundManager.playDiceRoll(); } catch(e){}
 
-      this.dice.roll(payload.val, () => {
-        this.updateUI();
-      });
+      if (this.dice) {
+        this.dice.roll(payload.val, () => {
+          this.updateUI();
+        });
+      }
     } else if (action === 'MOVE_TOKEN') {
       this.handleMoveToken(payload.tokenId);
     } else if (action === 'PASS_TURN') {
@@ -298,31 +342,33 @@ class App {
     } else if (action === 'REACTION') {
       this.triggerReaction(payload.type, false);
     } else if (action === 'CHAT_MSG') {
-      soundManager.playRoseReaction();
+      try { soundManager.playRoseReaction(); } catch(e){}
       this.showLovePopup(payload.msg);
     }
   }
 
   triggerReaction(type, broadcast = false) {
-    if (broadcast) {
+    if (broadcast && this.peerMgr) {
       this.peerMgr.send('REACTION', { type });
     }
 
     if (type === 'rose') {
-      soundManager.playRoseReaction();
-      this.particles.triggerRoseShower(); // Heavy rose rain shower!
-      this.particles.triggerLoveBurst('#ff1a40');
+      try { soundManager.playRoseReaction(); } catch(e){}
+      if (this.particles) {
+        this.particles.triggerRoseShower();
+        this.particles.triggerLoveBurst('#ff1a40');
+      }
       this.showLovePopup('🌹 Rose Rain Shower for Papri!');
     } else if (type === 'kiss') {
-      soundManager.playKissReaction();
-      this.particles.triggerLoveBurst('#ff6699');
+      try { soundManager.playKissReaction(); } catch(e){}
+      if (this.particles) this.particles.triggerLoveBurst('#ff6699');
       this.showLovePopup('💋 Kisses Sent With Love!');
     } else if (type === 'hug') {
-      soundManager.playKissReaction();
+      try { soundManager.playKissReaction(); } catch(e){}
       this.showLovePopup('🤗 Warm Hugs for Papri!');
     } else if (type === 'love') {
-      soundManager.playRoseReaction();
-      this.particles.triggerLoveBurst('#ff0055');
+      try { soundManager.playRoseReaction(); } catch(e){}
+      if (this.particles) this.particles.triggerLoveBurst('#ff0055');
       this.showLovePopup('❤️ I Love You Papri Forever!');
     }
   }
@@ -338,6 +384,7 @@ class App {
 
   updateVoiceHUD(status, msg) {
     const hud = document.getElementById('voice-status-text');
+    if (!hud) return;
     if (status === 'connected') hud.innerText = 'Online Connected';
     else if (status === 'voice_active') hud.innerText = 'Voice Call Live 🎙️';
     else if (status === 'mic_denied') hud.innerText = 'Voice (Muted)';
@@ -348,39 +395,48 @@ class App {
     const turn = this.engine.turn;
     const isMyTurn = (turn === this.myPlayerIdx);
 
-    document.getElementById('player-card-0').classList.toggle('active-turn', turn === 0);
-    document.getElementById('player-card-1').classList.toggle('active-turn', turn === 1);
+    const p0 = document.getElementById('player-card-0');
+    const p1 = document.getElementById('player-card-1');
+    if (p0) p0.classList.toggle('active-turn', turn === 0);
+    if (p1) p1.classList.toggle('active-turn', turn === 1);
 
     const rollBtn = document.getElementById('btn-roll-dice');
-    rollBtn.disabled = !isMyTurn || this.engine.diceRolled || this.engine.winner !== null;
+    if (rollBtn) rollBtn.disabled = !isMyTurn || this.engine.diceRolled || this.engine.winner !== null;
 
     const banner = document.getElementById('turn-banner-text');
-    if (this.engine.winner !== null) {
-      banner.innerText = 'Game Over!';
-    } else if (isMyTurn) {
-      banner.innerText = `❤️ It's Your Turn! Roll the Dice!`;
-      banner.style.color = '#ff6699';
-    } else {
-      banner.innerText = `Waiting for Papri / Lover's roll...`;
-      banner.style.color = '#ffffff';
+    if (banner) {
+      if (this.engine.winner !== null) {
+        banner.innerText = 'Game Over!';
+      } else if (isMyTurn) {
+        banner.innerText = `❤️ It's Your Turn! Roll the Dice!`;
+        banner.style.color = '#ff6699';
+      } else {
+        banner.innerText = `Waiting for Papri / Lover's roll...`;
+        banner.style.color = '#ffffff';
+      }
     }
   }
 
   handleVictory(winnerIdx) {
-    soundManager.playWinFanfare();
-    confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
+    try { soundManager.playWinFanfare(); } catch(e){}
+    try { confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } }); } catch(e){}
 
     const winModal = document.getElementById('win-modal');
     const winnerText = document.getElementById('win-winner-text');
     
-    winnerText.innerText = winnerIdx === 0 ? 'Papri Wins! 🌹' : 'My Love Wins! 💖';
-    winModal.classList.remove('hidden');
+    if (winnerText) winnerText.innerText = winnerIdx === 0 ? 'Papri Wins! 🌹' : 'My Love Wins! 💖';
+    if (winModal) {
+      winModal.style.display = 'flex';
+      winModal.classList.remove('hidden');
+    }
   }
 
   onResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this.camera && this.renderer) {
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
   }
 
   animate(time = 0) {
@@ -389,10 +445,11 @@ class App {
     const sec = time * 0.001;
     if (this.particles) this.particles.update(sec);
 
-    this.camera.position.x = Math.sin(sec * 0.3) * 0.4;
-    this.camera.lookAt(0, 0, 0);
-
-    this.renderer.render(this.scene, this.camera);
+    if (this.camera && this.renderer && this.scene) {
+      this.camera.position.x = Math.sin(sec * 0.3) * 0.4;
+      this.camera.lookAt(0, 0, 0);
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 }
 
