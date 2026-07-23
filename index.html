@@ -3,32 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Papri & My Love - 3D Romantic Ludo & Voice Call</title>
+  <title>Papri & My Love - 3D Romantic Ludo</title>
   <link rel="stylesheet" href="./src/style.css" />
-  <script>
-    window.closeModalDirect = function() {
-      var modal = document.getElementById('room-modal');
-      if (modal) {
-        modal.style.display = 'none';
-        modal.classList.add('hidden');
-      }
-    };
-  </script>
 </head>
 <body>
 
-  <!-- Three.js 3D WebGL Canvas Container -->
+  <!-- Three.js 3D Canvas -->
   <div id="canvas-container"></div>
 
-  <!-- Romantic Ticker Banner -->
+  <!-- Romantic Ticker -->
   <div class="love-ticker">
     <span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Every dice roll brings my heart closer to yours 💖</span>
   </div>
 
-  <!-- UI Overlay Layer -->
+  <!-- UI Overlay -->
   <div id="ui-overlay">
-    
-    <!-- Top Header -->
     <header class="interactive">
       <div class="brand">
         <h1>Papri & Lover Ludo <span class="heart-pulse">❤️</span></h1>
@@ -36,101 +25,56 @@
       <div class="hud-status">
         <div class="voice-hud" id="voice-hud">
           <span class="mic-active-dot"></span>
-          <span id="voice-status-text">Voice Connected</span>
+          <span id="voice-status-text">Connecting...</span>
         </div>
-        <button class="btn-icon" id="btn-toggle-mic">
-          <span id="mic-icon">🎙️</span> Mic On
-        </button>
-        <button class="btn-icon" id="btn-share-room">
-          🔗 Share Link
-        </button>
+        <button class="btn-icon" id="btn-toggle-mic">🎙️ Mic</button>
+        <button class="btn-icon" id="btn-share-room">🔗 Share</button>
       </div>
     </header>
 
-    <!-- Bottom Controls & Players -->
     <div class="game-footer">
-      
-      <!-- Player 0: Papri -->
       <div class="player-card interactive" id="player-card-0">
         <div class="player-avatar">🌹</div>
         <div class="player-info">
           <h3>Papri ❤️</h3>
-          <p id="player-0-status">Red Tokens</p>
+          <p id="player-0-status">Red</p>
         </div>
       </div>
 
-      <!-- Center Action Area: Roll Dice & Love Messages & Reactions -->
       <div class="center-controls interactive">
-        
-        <!-- Love Preset Messages Carousel/Bar -->
         <div class="love-messages-bar">
-          <button class="btn-msg" data-msg="Papri, I love you so much! ❤️">💌 Love You</button>
-          <button class="btn-msg" data-msg="You are my beautiful Rose! 🌹">🌹 My Rose</button>
-          <button class="btn-msg" data-msg="Sending you 1000 kisses! 💋">💋 Kisses</button>
-          <button class="btn-msg" data-msg="You look so gorgeous today! ✨">✨ Gorgeous</button>
-          <button class="btn-msg" data-msg="Take care of yourself my love! 💖">💖 Take Care</button>
+          <button class="btn-msg" data-msg="I love you Papri! ❤️">💌 Love</button>
+          <button class="btn-msg" data-msg="You are my Rose! 🌹">🌹 Rose</button>
+          <button class="btn-msg" data-msg="1000 kisses! 💋">💋 Kiss</button>
+          <button class="btn-msg" data-msg="So gorgeous! ✨">✨ Wow</button>
         </div>
-
         <div class="reactions-panel">
-          <button class="btn-react" data-reaction="rose" title="Send Rose Rain">🌹 Shower</button>
-          <button class="btn-react" data-reaction="kiss" title="Send Kiss">💋 Kiss</button>
-          <button class="btn-react" data-reaction="hug" title="Send Hug">🤗 Hug</button>
-          <button class="btn-react" data-reaction="love" title="Love Heart">❤️ Heart</button>
+          <button class="btn-react" data-reaction="rose">🌹</button>
+          <button class="btn-react" data-reaction="kiss">💋</button>
+          <button class="btn-react" data-reaction="hug">🤗</button>
+          <button class="btn-react" data-reaction="love">❤️</button>
         </div>
-
-        <button class="btn-roll-dice" id="btn-roll-dice">
-          🎲 Roll Dice 3D
-        </button>
-        <p id="turn-banner-text" style="font-size: 14px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
-          ❤️ It's Your Turn! Roll the Dice 🎲
-        </p>
+        <button class="btn-roll-dice" id="btn-roll-dice">🎲 Roll Dice</button>
+        <p id="turn-banner-text" class="turn-banner">❤️ Roll the Dice 🎲</p>
       </div>
 
-      <!-- Player 1: Lover -->
       <div class="player-card interactive" id="player-card-1">
         <div class="player-avatar">💖</div>
         <div class="player-info">
           <h3>My Love 💖</h3>
-          <p id="player-1-status">Green Tokens</p>
+          <p id="player-1-status">Green</p>
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- Room Join / Creation Modal -->
-  <div class="modal-overlay" id="room-modal">
-    <div class="modal-box">
-      <h2>Welcome Papri! ❤️</h2>
-      <p>Play 3D Romantic Ludo together online with live voice call!</p>
-      
-      <button class="btn-primary btn-play-instant" id="btn-start-game" onclick="window.closeModalDirect(); if(window.startGameDirect) window.startGameDirect();" style="margin-bottom: 4px; font-size: 18px; padding: 16px;">
-        ❤️ Instant Play / Start Game
-      </button>
-      <div id="auto-start-timer" style="font-size: 12px; opacity: 0.8; margin-bottom: 12px; color: #ff6699;">(Auto starting in 5s...)</div>
-
-      <div style="margin: 12px 0; opacity: 0.7; font-size: 14px;">- OR ONLINE MULTIPLAYER -</div>
-
-      <button class="btn-primary" id="btn-create-room" onclick="window.closeModalDirect(); if(window.createRoomDirect) window.createRoomDirect();" style="margin-bottom: 12px; background: linear-gradient(135deg, #00cc88, #009966);">
-        ✨ Create Online Room Code
-      </button>
-
-      <input type="text" class="input-code" id="input-room-code" placeholder="Enter Room Code (e.g. papri-ludu-xyz)" />
-      <button class="btn-primary" id="btn-join-room" onclick="window.closeModalDirect(); if(window.joinRoomDirect) window.joinRoomDirect();" style="background: linear-gradient(135deg, #3399ff, #0066cc);">
-        🚀 Join Game Room
-      </button>
-    </div>
-  </div>
-
-  <!-- Victory Celebration Modal -->
+  <!-- Victory Modal -->
   <div class="modal-overlay hidden" id="win-modal">
     <div class="modal-box">
-      <h2>Congratulations! 🎉❤️</h2>
-      <h3 id="win-winner-text" style="font-size: 24px; color: var(--pink-accent); margin-bottom: 16px;">Papri Wins!</h3>
-      <p>Together forever in love and victory! 🌹✨</p>
-      <button class="btn-primary" onclick="window.location.reload()">
-        🔄 Play Again
-      </button>
+      <h2>🎉 Congratulations! ❤️</h2>
+      <h3 id="win-winner-text">Winner!</h3>
+      <p>Together forever in love! 🌹✨</p>
+      <button class="btn-primary" onclick="location.reload()">🔄 Play Again</button>
     </div>
   </div>
 
