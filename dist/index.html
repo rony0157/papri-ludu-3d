@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Papri & My Love - 3D Romantic Ludo & Voice Call</title>
+  <script type="module" crossorigin src="./assets/index-DUBUxDkC.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-o82zXBJ8.css">
+</head>
+<body>
+
+  <!-- Three.js 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- UI Overlay Layer -->
+  <div id="ui-overlay">
+    
+    <!-- Top Header -->
+    <header class="interactive">
+      <div class="brand">
+        <h1>Papri & Lover Ludo <span class="heart-pulse">❤️</span></h1>
+      </div>
+      <div class="hud-status">
+        <div class="voice-hud" id="voice-hud">
+          <span class="mic-active-dot"></span>
+          <span id="voice-status-text">Voice Connected</span>
+        </div>
+        <button class="btn-icon" id="btn-toggle-mic">
+          <span id="mic-icon">🎙️</span> Mic On
+        </button>
+        <button class="btn-icon" id="btn-share-room">
+          🔗 Share Link
+        </button>
+      </div>
+    </header>
+
+    <!-- Bottom Controls & Players -->
+    <div class="game-footer">
+      
+      <!-- Player 0: Papri -->
+      <div class="player-card interactive" id="player-card-0">
+        <div class="player-avatar">🌹</div>
+        <div class="player-info">
+          <h3>Papri ❤️</h3>
+          <p id="player-0-status">Red Tokens</p>
+        </div>
+      </div>
+
+      <!-- Center Action Area: Roll Dice & Reactions -->
+      <div class="center-controls interactive">
+        <div class="reactions-panel">
+          <button class="btn-react" data-reaction="rose" title="Send Rose Rain">🌹</button>
+          <button class="btn-react" data-reaction="kiss" title="Send Kiss">💋</button>
+          <button class="btn-react" data-reaction="hug" title="Send Hug">🤗</button>
+          <button class="btn-react" data-reaction="love" title="Love Heart">❤️</button>
+        </div>
+
+        <button class="btn-roll-dice" id="btn-roll-dice">
+          🎲 Roll Dice 3D
+        </button>
+        <p id="turn-banner-text" style="font-size: 14px; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8);">
+          Waiting to start...
+        </p>
+      </div>
+
+      <!-- Player 1: Lover -->
+      <div class="player-card interactive" id="player-card-1">
+        <div class="player-avatar">💖</div>
+        <div class="player-info">
+          <h3>My Love 💖</h3>
+          <p id="player-1-status">Green Tokens</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Room Join / Creation Modal -->
+  <div class="modal-overlay" id="room-modal">
+    <div class="modal-box">
+      <h2>Welcome Papri! ❤️</h2>
+      <p>Play 3D Romantic Ludo together online with live voice call!</p>
+      
+      <button class="btn-primary" id="btn-create-room" style="margin-bottom: 12px;">
+        ✨ Create New Room (Host)
+      </button>
+
+      <div style="margin: 12px 0; opacity: 0.6;">- OR JOIN ROOM -</div>
+
+      <input type="text" class="input-code" id="input-room-code" placeholder="Enter Room Code (e.g. papri-ludu-xyz)" />
+      <button class="btn-primary" id="btn-join-room">
+        🚀 Join Game
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Celebration Modal -->
+  <div class="modal-overlay hidden" id="win-modal">
+    <div class="modal-box">
+      <h2>Congratulations! 🎉❤️</h2>
+      <h3 id="win-winner-text" style="font-size: 24px; color: var(--pink-accent); margin-bottom: 16px;">Papri Wins!</h3>
+      <p>Together forever in love and victory! 🌹✨</p>
+      <button class="btn-primary" onclick="window.location.reload()">
+        🔄 Play Again
+      </button>
+    </div>
+  </div>
+
+</body>
+</html>

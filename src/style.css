@@ -1,0 +1,351 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg-dark: #0f0a17;
+  --panel-bg: rgba(26, 17, 40, 0.75);
+  --pink-accent: #ff1a53;
+  --pink-light: #ff6699;
+  --gold-accent: #ffcc00;
+  --emerald-accent: #00cc88;
+  --text-light: #fff0f5;
+  --glass-border: rgba(255, 102, 153, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  font-family: 'Outfit', sans-serif;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+}
+
+#canvas-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+/* UI Overlay Layer */
+#ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.interactive {
+  pointer-events: auto;
+}
+
+/* Header Bar */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel-bg);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  padding: 12px 24px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand h1 {
+  font-family: 'Dancing Script', cursive;
+  font-size: 28px;
+  background: linear-gradient(135deg, #ff6699, #ff1a53);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.heart-pulse {
+  display: inline-block;
+  color: var(--pink-accent);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Room & Voice Status HUD */
+.hud-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.btn-icon {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
+  color: var(--text-light);
+  padding: 10px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+  background: var(--pink-accent);
+  border-color: var(--pink-accent);
+  box-shadow: 0 0 16px rgba(255, 26, 83, 0.5);
+}
+
+.voice-hud {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0, 204, 136, 0.15);
+  border: 1px solid rgba(0, 204, 136, 0.4);
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mic-active-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--emerald-accent);
+  box-shadow: 0 0 10px var(--emerald-accent);
+  animation: pulse 1s infinite;
+}
+
+/* Player Cards Footer Bar */
+.game-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.player-card {
+  background: var(--panel-bg);
+  backdrop-filter: blur(14px);
+  border: 2px solid transparent;
+  padding: 16px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 220px;
+  transition: all 0.3s ease;
+}
+
+.player-card.active-turn {
+  border-color: var(--pink-accent);
+  box-shadow: 0 0 24px rgba(255, 26, 83, 0.6);
+  transform: translateY(-4px);
+}
+
+.player-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6699, #ff1a53);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  border: 2px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.player-info h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.player-info p {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* Control Panel & Roll Dice Button */
+.center-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 0 auto;
+}
+
+.btn-roll-dice {
+  background: linear-gradient(135deg, #ff1a53, #ff6699);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 16px 36px;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(255, 26, 83, 0.6);
+  transition: all 0.3s ease;
+}
+
+.btn-roll-dice:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(255, 26, 83, 0.8);
+}
+
+.btn-roll-dice:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Reaction Floating Panel */
+.reactions-panel {
+  display: flex;
+  gap: 10px;
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+}
+
+.btn-react {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.btn-react:hover {
+  transform: scale(1.3);
+}
+
+/* Floating Love Popups on Screen */
+.love-popup-msg {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 26, 83, 0.9);
+  color: white;
+  padding: 16px 32px;
+  border-radius: 30px;
+  font-size: 24px;
+  font-weight: 700;
+  box-shadow: 0 12px 32px rgba(255, 26, 83, 0.8);
+  animation: popupFade 2.5s forwards ease-in-out;
+  pointer-events: none;
+  z-index: 100;
+}
+
+@keyframes popupFade {
+  0% { opacity: 0; transform: translate(-50%, -20%) scale(0.5); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -80%) scale(0.8); }
+}
+
+/* Modals */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 5, 20, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-box {
+  background: rgba(26, 17, 40, 0.95);
+  border: 2px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 32px;
+  width: 90%;
+  max-width: 440px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.modal-box h2 {
+  font-family: 'Dancing Script', cursive;
+  font-size: 36px;
+  margin-bottom: 12px;
+  color: var(--pink-light);
+}
+
+.modal-box p {
+  margin-bottom: 20px;
+  font-size: 15px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.input-code {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.btn-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #ff1a53, #ff6699);
+  color: white;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 24px rgba(255, 26, 83, 0.6);
+}
