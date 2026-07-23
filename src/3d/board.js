@@ -47,7 +47,7 @@ export class LudoBoard {
 
     // 2. Generate 15x15 Ludo Grid
     const cellSize = 0.8;
-    const gridOffset = -5.6; // (15 - 1) / 2 * 0.8 = 5.6
+    const gridOffset = -5.6;
 
     const getCoord = (col, row) => ({
       x: gridOffset + col * cellSize,
@@ -55,7 +55,6 @@ export class LudoBoard {
       z: gridOffset + row * cellSize
     });
 
-    // Helper for cells
     const createCell = (col, row, color, isRaised = false, hasHeart = false) => {
       const coord = getCoord(col, row);
       const cellGeo = new THREE.BoxGeometry(cellSize * 0.92, isRaised ? 0.2 : 0.08, cellSize * 0.92);
@@ -71,7 +70,6 @@ export class LudoBoard {
       this.boardGroup.add(cellMesh);
 
       if (hasHeart) {
-        // Glowing heart icon on safe cell
         const heartGeo = new THREE.OctahedronGeometry(0.15, 0);
         const heartMat = new THREE.MeshStandardMaterial({
           color: 0xff3366,
@@ -101,7 +99,7 @@ export class LudoBoard {
     // Yellow Base (Top-Right: col 9..14, row 0..5)
     this.createBaseArea(9, 0, 14, 5, COLOR_YELLOW, 2, getCoord);
     // Blue Base (Bottom-Left: col 0..5, row 9..14)
-    this.createBaseArea(0, 9, 5, 14, 3, getCoord);
+    this.createBaseArea(0, 9, 5, 14, COLOR_BLUE, 3, getCoord);
     // Green Base (Bottom-Right: col 9..14, row 9..14)
     this.createBaseArea(9, 9, 14, 14, COLOR_GREEN, 1, getCoord);
 
@@ -133,29 +131,22 @@ export class LudoBoard {
     this.boardGroup.add(topHeart);
 
     // 5. Map 52 Standard Track Cell Positions
-    // Standard Ludo Path Order starting at Red's Start (col 1, row 6)
     const pathCoords = [
-      // Red Start Arm (col 1..5, row 6)
       [1, 6], [2, 6], [3, 6], [4, 6], [5, 6],
-      // Top Arm up (col 6, row 5..0)
       [6, 5], [6, 4], [6, 3], [6, 2], [6, 1], [6, 0],
-      [7, 0], // Top turn
+      [7, 0],
       [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5],
-      // Right Arm right (col 9..14, row 6)
       [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6],
-      [14, 7], // Right turn
+      [14, 7],
       [14, 8], [13, 8], [12, 8], [11, 8], [10, 8], [9, 8],
-      // Bottom Arm down (col 8, row 9..14)
       [8, 9], [8, 10], [8, 11], [8, 12], [8, 13], [8, 14],
-      [7, 14], // Bottom turn
+      [7, 14],
       [6, 14], [6, 13], [6, 12], [6, 11], [6, 10], [6, 9],
-      // Left Arm left (col 5..0, row 8)
       [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
-      [0, 7], // Left turn
+      [0, 7],
       [0, 6]
     ];
 
-    // Safe indices in 52 path
     const safeIndices = [0, 8, 13, 21, 26, 34, 39, 47];
 
     pathCoords.forEach((pt, idx) => {
@@ -173,11 +164,9 @@ export class LudoBoard {
     });
 
     // 6. Home Paths Leading to Center Trophy
-    // Red Home Path (col 1..6, row 7)
     for (let c = 1; c <= 6; c++) {
       this.homePaths[0].push(createCell(c, 7, COLOR_RED, true));
     }
-    // Green Home Path (col 13..8, row 7)
     for (let c = 13; c >= 8; c--) {
       this.homePaths[1].push(createCell(c, 7, COLOR_GREEN, true));
     }
@@ -186,7 +175,6 @@ export class LudoBoard {
   }
 
   createBaseArea(startCol, startRow, endCol, endRow, mainColor, playerIdx, getCoord) {
-    const cellSize = 0.8;
     const centerCol = (startCol + endCol) / 2;
     const centerRow = (startRow + endRow) / 2;
     const coordCenter = getCoord(centerCol, centerRow);
@@ -224,7 +212,7 @@ export class LudoBoard {
       spotMesh.position.set(posX, 0.12, posZ);
       this.boardGroup.add(spotMesh);
 
-      if (this.basePositions[playerIdx]) {
+      if (this.basePositions && this.basePositions[playerIdx]) {
         this.basePositions[playerIdx].push({ x: posX, y: 0.25, z: posZ });
       }
     });
