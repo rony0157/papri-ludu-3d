@@ -9,12 +9,12 @@ export class ParticleSystem {
     this.createBokehHearts();
   }
 
-  // Create 3D Rose Petal particles
+  // Create 3D Rose Petal particles (100 Petals Rain)
   createRosePetals() {
-    const petalCount = 60;
-    const geometry = new THREE.PlaneGeometry(0.3, 0.4);
+    const petalCount = 100;
+    const geometry = new THREE.PlaneGeometry(0.35, 0.45);
     
-    // Canvas texture for rose petal
+    // Canvas texture for glowing red rose petal
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -36,14 +36,14 @@ export class ParticleSystem {
       depthWrite: false
     });
 
-    this.petalInstGroup = new THREE.Group();
+    this.petalGroup = new THREE.Group();
 
     for (let i = 0; i < petalCount; i++) {
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(
-        (Math.random() - 0.5) * 20,
-        Math.random() * 15 + 2,
-        (Math.random() - 0.5) * 20
+        (Math.random() - 0.5) * 22,
+        Math.random() * 16 + 2,
+        (Math.random() - 0.5) * 22
       );
       mesh.rotation.set(
         Math.random() * Math.PI,
@@ -51,20 +51,20 @@ export class ParticleSystem {
         Math.random() * Math.PI
       );
 
-      const speedY = 0.015 + Math.random() * 0.025;
-      const rotSpeedX = (Math.random() - 0.5) * 0.02;
-      const rotSpeedY = (Math.random() - 0.5) * 0.03;
+      const speedY = 0.02 + Math.random() * 0.03;
+      const rotSpeedX = (Math.random() - 0.5) * 0.03;
+      const rotSpeedY = (Math.random() - 0.5) * 0.04;
 
       this.petals.push({ mesh, speedY, rotSpeedX, rotSpeedY, initialX: mesh.position.x });
-      this.petalInstGroup.add(mesh);
+      this.petalGroup.add(mesh);
     }
 
-    this.scene.add(this.petalInstGroup);
+    this.scene.add(this.petalGroup);
   }
 
-  // Create Bokeh Heart Sparkles
+  // Create Bokeh Heart Sparkles (60 Hearts)
   createBokehHearts() {
-    const heartCount = 35;
+    const heartCount = 60;
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -84,7 +84,7 @@ export class ParticleSystem {
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
-      opacity: 0.7,
+      opacity: 0.8,
       blending: THREE.AdditiveBlending
     });
 
@@ -93,17 +93,17 @@ export class ParticleSystem {
     for (let i = 0; i < heartCount; i++) {
       const sprite = new THREE.Sprite(material);
       sprite.position.set(
-        (Math.random() - 0.5) * 16,
-        Math.random() * 10 - 2,
-        (Math.random() - 0.5) * 16
+        (Math.random() - 0.5) * 18,
+        Math.random() * 12 - 2,
+        (Math.random() - 0.5) * 18
       );
-      const scale = 0.2 + Math.random() * 0.35;
+      const scale = 0.25 + Math.random() * 0.4;
       sprite.scale.set(scale, scale, 1);
 
       this.hearts.push({
         sprite,
         baseScale: scale,
-        speedY: 0.008 + Math.random() * 0.015,
+        speedY: 0.01 + Math.random() * 0.02,
         phase: Math.random() * Math.PI * 2
       });
       this.heartGroup.add(sprite);
@@ -112,35 +112,49 @@ export class ParticleSystem {
     this.scene.add(this.heartGroup);
   }
 
+  // Heavy Rose Rain Shower Effect on Reaction Click!
+  triggerRoseShower() {
+    this.petals.forEach(p => {
+      p.speedY += 0.04; // Temporarily speed up falling
+      p.mesh.position.y += Math.random() * 4;
+    });
+
+    setTimeout(() => {
+      this.petals.forEach(p => {
+        p.speedY = 0.02 + Math.random() * 0.03;
+      });
+    }, 3000);
+  }
+
   // Update particles on frame
   update(time) {
     this.petals.forEach(p => {
       p.mesh.position.y -= p.speedY;
-      p.mesh.position.x = p.initialX + Math.sin(time * 2 + p.mesh.position.y) * 0.8;
+      p.mesh.position.x = p.initialX + Math.sin(time * 2.5 + p.mesh.position.y) * 0.9;
       p.mesh.rotation.x += p.rotSpeedX;
       p.mesh.rotation.y += p.rotSpeedY;
 
       if (p.mesh.position.y < -3) {
-        p.mesh.position.y = 15;
-        p.mesh.position.x = (Math.random() - 0.5) * 20;
+        p.mesh.position.y = 16;
+        p.mesh.position.x = (Math.random() - 0.5) * 22;
         p.initialX = p.mesh.position.x;
       }
     });
 
     this.hearts.forEach(h => {
       h.sprite.position.y += h.speedY;
-      const scalePulse = h.baseScale * (1 + Math.sin(time * 3 + h.phase) * 0.25);
+      const scalePulse = h.baseScale * (1 + Math.sin(time * 3 + h.phase) * 0.3);
       h.sprite.scale.set(scalePulse, scalePulse, 1);
 
-      if (h.sprite.position.y > 12) {
+      if (h.sprite.position.y > 13) {
         h.sprite.position.y = -3;
-        h.sprite.position.x = (Math.random() - 0.5) * 16;
+        h.sprite.position.x = (Math.random() - 0.5) * 18;
       }
     });
   }
 
   triggerLoveBurst(color = '#ff1a53') {
-    const burstCount = 25;
+    const burstCount = 35;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(burstCount * 3);
     const velocities = [];
@@ -151,9 +165,9 @@ export class ParticleSystem {
       positions[i * 3 + 2] = (Math.random() - 0.5) * 2;
 
       velocities.push({
-        x: (Math.random() - 0.5) * 0.1,
-        y: 0.05 + Math.random() * 0.08,
-        z: (Math.random() - 0.5) * 0.1
+        x: (Math.random() - 0.5) * 0.12,
+        y: 0.06 + Math.random() * 0.1,
+        z: (Math.random() - 0.5) * 0.12
       });
     }
 
@@ -161,7 +175,7 @@ export class ParticleSystem {
 
     const material = new THREE.PointsMaterial({
       color: new THREE.Color(color),
-      size: 0.4,
+      size: 0.45,
       transparent: true,
       opacity: 1
     });

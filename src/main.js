@@ -33,7 +33,6 @@ class App {
       0.1,
       100
     );
-    // Isometric-style angled view of board
     this.camera.position.set(0, 11, 11);
     this.camera.lookAt(0, 0, 0);
 
@@ -45,7 +44,7 @@ class App {
     this.container.appendChild(this.renderer.domElement);
 
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.8);
+    const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.85);
     this.scene.add(ambientLight);
 
     const sunLight = new THREE.DirectionalLight(0xffe6ee, 1.2);
@@ -55,7 +54,6 @@ class App {
     sunLight.shadow.mapSize.height = 1024;
     this.scene.add(sunLight);
 
-    // Pink / Purple Point lights over corners for romantic ambient glow
     const pinkLight = new THREE.PointLight(0xff1a53, 1.5, 12);
     pinkLight.position.set(-5, 4, -5);
     this.scene.add(pinkLight);
@@ -74,7 +72,6 @@ class App {
     this.dice = new LudoDice(this.scene);
     this.particles = new ParticleSystem(this.scene);
 
-    // Raycaster for clicking 3D tokens
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
 
@@ -88,7 +85,6 @@ class App {
       (status, msg) => this.updateVoiceHUD(status, msg)
     );
 
-    // Check URL query parameters for ?room=xxx
     const urlParams = new URLSearchParams(window.location.search);
     const roomParam = urlParams.get('room');
 
@@ -98,30 +94,46 @@ class App {
     }
   }
 
+  // Instant Game Start / Play Together
+  startGameInstant() {
+    document.getElementById('room-modal').classList.add('hidden');
+    soundManager.startRomanticMusic();
+    this.updateUI();
+    this.showLovePopup(`Welcome Papri & Lover! ❤️ Game Started!`);
+    
+    // Background init peer connection
+    this.peerMgr.init(null);
+  }
+
   async createRoom() {
+    document.getElementById('room-modal').classList.add('hidden');
+    soundManager.startRomanticMusic();
+    this.updateUI();
+
     const res = await this.peerMgr.init(null);
     this.myPlayerIdx = 0; // Host is Papri (Red)
-    document.getElementById('room-modal').classList.add('hidden');
-    this.updateUI();
-    soundManager.startRomanticMusic();
 
-    // Show room share code
     const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
     this.showLovePopup(`Room Created! Code: ${res.roomId}`);
   }
 
   async joinRoom(code) {
-    if (!code) return;
+    if (!code) {
+      alert('Please enter a valid room code!');
+      return;
+    }
+    document.getElementById('room-modal').classList.add('hidden');
+    soundManager.startRomanticMusic();
+    this.updateUI();
+
     const res = await this.peerMgr.init(code.trim());
     this.myPlayerIdx = 1; // Client is My Love (Green)
-    document.getElementById('room-modal').classList.add('hidden');
-    this.updateUI();
-    soundManager.startRomanticMusic();
-    this.showLovePopup(`Joined Game with Papri! ❤️`);
+    this.showLovePopup(`Joined Room with Papri! ❤️`);
   }
 
   // 4. UI Listeners
   initUIListeners() {
+    document.getElementById('btn-start-game').addEventListener('click', () => this.startGameInstant());
     document.getElementById('btn-create-room').addEventListener('click', () => this.createRoom());
     document.getElementById('btn-join-room').addEventListener('click', () => {
       const code = document.getElementById('input-room-code').value;
@@ -143,8 +155,18 @@ class App {
         navigator.clipboard.writeText(roomUrl);
         alert(`Room Link Copied! Share with Papri:\n${roomUrl}`);
       } else {
-        alert('Please create or join a room first!');
+        const fallbackUrl = `${window.location.origin}${window.location.pathname}?room=papri-love-room`;
+        navigator.clipboard.writeText(fallbackUrl);
+        alert(`Room Link Copied! Share with Papri:\n${fallbackUrl}`);
       }
+    });
+
+    // Preset Love Messages Buttons
+    document.querySelectorAll('.btn-msg').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const msg = e.target.getAttribute('data-msg');
+        this.sendLoveMessage(msg);
+      });
     });
 
     // Reaction Buttons
@@ -156,7 +178,12 @@ class App {
     });
   }
 
-  // Handle Dice Roll
+  sendLoveMessage(msg) {
+    soundManager.playRoseReaction();
+    this.showLovePopup(msg);
+    this.peerMgr.send('CHAT_MSG', { msg });
+  }
+
   handleRollDice() {
     if (this.engine.turn !== this.myPlayerIdx || this.engine.diceRolled || this.engine.winner !== null) {
       return;
@@ -166,40 +193,32 @@ class App {
     if (!val) return;
 
     soundManager.playDiceRoll();
-
-    // Broadcast roll to network peer
     this.peerMgr.send('DICE_ROLL', { val });
 
     this.dice.roll(val, () => {
       const validMoves = this.engine.getValidTokenMoves();
 
       if (validMoves.length === 0) {
-        // No valid moves available -> pass turn
         setTimeout(() => {
           this.engine.passTurn();
           this.peerMgr.send('PASS_TURN', {});
           this.updateUI();
         }, 800);
       } else if (validMoves.length === 1) {
-        // Auto move if only 1 valid token move
         this.handleMoveToken(validMoves[0]);
       } else {
-        // Highlight choices for player to tap 3D token
         this.tokens.highlightTokens(this.engine.turn, validMoves);
         this.updateUI();
       }
     });
   }
 
-  // Handle Token Movement
   handleMoveToken(tokenId) {
     const moveRes = this.engine.moveToken(tokenId);
     if (!moveRes) return;
 
-    // Broadcast move to network peer
     this.peerMgr.send('MOVE_TOKEN', { tokenId });
 
-    // Map 3D target coordinates trajectory
     const coords = moveRes.trajectory.map(pos => {
       if (pos.type === 'TRACK') return this.board.trackPositions[pos.idx];
       if (pos.type === 'HOME_PATH') return this.board.homePaths[this.engine.turn][pos.idx];
@@ -211,7 +230,6 @@ class App {
     this.tokens.animateMove(moveRes.playerIdx, tokenId, coords, () => {
       if (moveRes.capturedToken) {
         soundManager.playCapture();
-        // Reset captured token back to base
         const cap = moveRes.capturedToken;
         const baseSpot = this.board.basePositions[cap.playerIdx][cap.tokenId];
         this.tokens.tokens[cap.playerIdx][cap.tokenId].mesh.position.set(baseSpot.x, baseSpot.y, baseSpot.z);
@@ -228,7 +246,6 @@ class App {
     });
   }
 
-  // Handle Clicking on 3D Scene to select token
   onPointerDown(event) {
     if (this.engine.turn !== this.myPlayerIdx || !this.engine.diceRolled) return;
 
@@ -248,7 +265,6 @@ class App {
     const intersects = this.raycaster.intersectObjects(meshesToIntersect, true);
 
     if (intersects.length > 0) {
-      // Find parent token group
       let obj = intersects[0].object;
       while (obj.parent && !obj.parent.isGroup) {
         obj = obj.parent;
@@ -263,7 +279,6 @@ class App {
     }
   }
 
-  // Handle incoming network packets from PeerJS
   handleNetworkPacket(packet) {
     const { action, payload } = packet;
 
@@ -282,10 +297,12 @@ class App {
       this.updateUI();
     } else if (action === 'REACTION') {
       this.triggerReaction(payload.type, false);
+    } else if (action === 'CHAT_MSG') {
+      soundManager.playRoseReaction();
+      this.showLovePopup(payload.msg);
     }
   }
 
-  // Trigger Romantic Reactions (Roses, Kisses, Hugs, Hearts)
   triggerReaction(type, broadcast = false) {
     if (broadcast) {
       this.peerMgr.send('REACTION', { type });
@@ -293,19 +310,20 @@ class App {
 
     if (type === 'rose') {
       soundManager.playRoseReaction();
+      this.particles.triggerRoseShower(); // Heavy rose rain shower!
       this.particles.triggerLoveBurst('#ff1a40');
-      this.showLovePopup('🌹 Sent Rose Shower!');
+      this.showLovePopup('🌹 Rose Rain Shower for Papri!');
     } else if (type === 'kiss') {
       soundManager.playKissReaction();
       this.particles.triggerLoveBurst('#ff6699');
-      this.showLovePopup('💋 Sending You Sweet Kisses!');
+      this.showLovePopup('💋 Kisses Sent With Love!');
     } else if (type === 'hug') {
       soundManager.playKissReaction();
-      this.showLovePopup('🤗 Sending Warm Warm Hugs!');
+      this.showLovePopup('🤗 Warm Hugs for Papri!');
     } else if (type === 'love') {
       soundManager.playRoseReaction();
       this.particles.triggerLoveBurst('#ff0055');
-      this.showLovePopup('❤️ I Love You Papri!');
+      this.showLovePopup('❤️ I Love You Papri Forever!');
     }
   }
 
@@ -350,7 +368,7 @@ class App {
 
   handleVictory(winnerIdx) {
     soundManager.playWinFanfare();
-    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
 
     const winModal = document.getElementById('win-modal');
     const winnerText = document.getElementById('win-winner-text');
@@ -371,7 +389,6 @@ class App {
     const sec = time * 0.001;
     if (this.particles) this.particles.update(sec);
 
-    // Subtle 3D camera wobble for floating romantic feel
     this.camera.position.x = Math.sin(sec * 0.3) * 0.4;
     this.camera.lookAt(0, 0, 0);
 
@@ -379,7 +396,6 @@ class App {
   }
 }
 
-// Start App when DOM ready
 window.addEventListener('DOMContentLoaded', () => {
   window.app = new App();
 });
