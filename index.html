@@ -89,7 +89,7 @@
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">Multiplayer Live</span></div>
+        <div class="vh"><span class="dot"></span><span id="vs">Pass & Play / Live P2P</span></div>
         <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
@@ -112,7 +112,6 @@
           <div class="dice-val-box" id="dv-box">🎲</div>
           <button id="rd">🎲 Roll Dice</button>
         </div>
-        <!-- 2D token selection buttons container -->
         <div class="token-picker-bar" id="tp-bar"></div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
@@ -411,13 +410,12 @@ class App {
     const pParam = urlParams.get('player');
     this.myId = pParam !== null ? parseInt(pParam, 10) : null;
 
-    this.isOnlinePartnerConnected = false;
+    this.isLivePeerConnected = false; // Only true when an ACTUAL P2P or WebSocket connection is open
     this.autoMoveTimer = null;
 
     try {
       this.bc = new BroadcastChannel('papri_ludu_channel');
       this.bc.onmessage = (e) => {
-        this.isOnlinePartnerConnected = true;
         this.onMsg(e.data);
       };
     } catch(e) { this.bc = null; }
@@ -491,7 +489,7 @@ class App {
           const d = JSON.parse(e.data);
           if (d.action === 'ASSIGNED') {
             if (this.myId === null) this.myId = d.payload.playerId;
-            this.isOnlinePartnerConnected = true;
+            this.isLivePeerConnected = true;
           }
           this.onMsg(d);
         };
@@ -511,7 +509,7 @@ class App {
 
           this.peer.on('connection', (c) => {
             this.conn = c;
-            this.isOnlinePartnerConnected = true;
+            this.isLivePeerConnected = true;
             this.setupConn(c);
             st.textContent = '🟢 Connected with My Love!';
             this.popup('My Love Connected! Let\'s play! ❤️');
@@ -524,7 +522,7 @@ class App {
             this.peer = new Peer({ debug: 1 });
             this.peer.on('open', () => {
               if (this.myId === null) this.myId = 1;
-              this.isOnlinePartnerConnected = true;
+              this.isLivePeerConnected = true;
               st.textContent = '💖 My Love (Green) — Connected!';
               this.conn = this.peer.connect(ROOM_ID, { reliable: true });
               this.setupConn(this.conn);
@@ -544,7 +542,7 @@ class App {
     c.on('open', () => {
       st.textContent = '🟢 Connected Live!';
       st.className = '';
-      this.isOnlinePartnerConnected = true;
+      this.isLivePeerConnected = true;
       this.ui();
     });
     c.on('data', (d) => this.onMsg(d));
@@ -578,15 +576,15 @@ class App {
   }
 
   rollDice() {
-    if (this.isOnlinePartnerConnected && this.myId !== null && this.eng.turn !== this.myId) {
+    // Only enforce player turn restrictions IF a live P2P/WebSocket connection is active!
+    // In local / solo / 1-tab testing, ALWAYS ALLOW ROLLING for whichever turn it is!
+    if (this.isLivePeerConnected && this.myId !== null && this.eng.turn !== this.myId) {
       return;
     }
 
-    // IF dice already rolled AND valid moves exist: clicking Roll Dice moves the best/furthest token automatically!
     if (this.eng.dr && this.eng.winner === null) {
       const vm = this.eng.validMoves();
       if (vm.length > 0) {
-        // Pick furthest advanced token
         const bestTokenId = this.getBestTokenToMove(vm);
         this.doMove(bestTokenId, true);
         return;
@@ -606,7 +604,6 @@ class App {
 
   getBestTokenToMove(validTokenIds) {
     const playerTokens = this.eng.pl[this.eng.turn].tokens;
-    // Prefer tokens on track with maximum stepCount, else first token
     let bestId = validTokenIds[0];
     let maxSteps = -1;
     validTokenIds.forEach(id => {
@@ -643,13 +640,11 @@ class App {
         this.popup('🎉 ROLLED A 6! Token Unlocked + Extra Turn! 🎲');
         this.doMove(vm[0], true);
       } else {
-        // Tokens on track can move! Highlight them and display 2D Picker Buttons
         this.tokens.highlight(this.eng.turn, vm);
         this.render2DTokenPicker(vm);
         this.popup('👆 Tap a token on 3D board OR click button below to move!');
         this.ui();
 
-        // 4-second Auto-move safety timer so game NEVER freezes even if user hesitates
         this.autoMoveTimer = setTimeout(() => {
           if (this.eng.dr && this.eng.winner === null) {
             const currentVm = this.eng.validMoves();
@@ -658,7 +653,7 @@ class App {
               this.doMove(bestId, true);
             }
           }
-        }, 4500);
+        }, 4000);
       }
     }
   }
@@ -670,7 +665,7 @@ class App {
 
     const pColorName = this.eng.turn === 0 ? 'Red' : 'Green';
 
-    validTokenIds.forEach((tid, idx) => {
+    validTokenIds.forEach((tid) => {
       const tokenObj = this.eng.pl[this.eng.turn].tokens[tid];
       const btn = document.createElement('button');
       btn.className = 'btn-pick-token';
@@ -713,7 +708,7 @@ class App {
   }
 
   click(e) {
-    if (this.isOnlinePartnerConnected && this.myId !== null && this.eng.turn !== this.myId) return;
+    if (this.isLivePeerConnected && this.myId !== null && this.eng.turn !== this.myId) return;
     if (!this.eng.dr) return;
 
     const vm = this.eng.validMoves(); if (!vm.length) return;
@@ -743,7 +738,7 @@ class App {
   }
   ui() {
     const t = this.eng.turn;
-    const isMyTurn = (this.myId === null || !this.isOnlinePartnerConnected) ? true : (t === this.myId);
+    const isMyTurn = (!this.isLivePeerConnected || this.myId === null) ? true : (t === this.myId);
 
     const p0=document.getElementById('p0'),p1=document.getElementById('p1');
     if(p0) p0.classList.toggle('on',t===0);
