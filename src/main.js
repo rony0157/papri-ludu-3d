@@ -176,42 +176,53 @@ class App {
     if (this.peerMgr && !this.peerMgr.peer) this.peerMgr.init(null);
   }
 
-  async createRoom() {
-    this.hideModal();
+  createRoom() {
+    this.hideModal(); // HIDE MODAL INSTANTLY ON LINE 1!
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
     this.myPlayerIdx = 0; // Host is Papri (Red)
     this.updateUI();
 
     if (this.peerMgr) {
-      const res = await this.peerMgr.init(null);
-      const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
-      try {
-        await navigator.clipboard.writeText(roomUrl);
-        this.showLovePopup(`✨ Room Created! Code: ${res.roomId}\nLink Copied to Clipboard!`);
-      } catch(e) {
-        this.showLovePopup(`✨ Room Created! Code: ${res.roomId}`);
-      }
+      this.peerMgr.init(null).then((res) => {
+        const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
+        try {
+          navigator.clipboard.writeText(roomUrl);
+          this.showLovePopup(`✨ Room Created! Code: ${res.roomId}\nLink Copied!`);
+        } catch(e) {
+          this.showLovePopup(`✨ Room Created! Code: ${res.roomId}`);
+        }
+      });
     }
   }
 
-  async joinRoom(code) {
-    if (!code) return;
-    this.hideModal();
+  joinRoom(code) {
+    if (!code) {
+      const input = document.getElementById('input-room-code');
+      code = input ? input.value : '';
+    }
+    this.hideModal(); // HIDE MODAL INSTANTLY ON LINE 1!
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.isOnlineMode = true;
     this.myPlayerIdx = 1; // Client is My Love (Green)
     this.updateUI();
 
-    if (this.peerMgr) {
-      const res = await this.peerMgr.init(code.trim());
-      this.showLovePopup(`Joined Online Room ${code.trim()}! ❤️`);
+    if (this.peerMgr && code) {
+      this.peerMgr.init(code.trim()).then(() => {
+        this.showLovePopup(`Joined Online Room ${code.trim()}! ❤️`);
+      });
     }
   }
 
   // 4. UI Listeners
   initUIListeners() {
     window.startGameDirect = () => this.startGameInstant();
+    window.createRoomDirect = () => this.createRoom();
+    window.joinRoomDirect = () => {
+      const input = document.getElementById('input-room-code');
+      const code = input ? input.value : '';
+      this.joinRoom(code);
+    };
 
     const btnStart = document.getElementById('btn-start-game');
     if (btnStart) btnStart.addEventListener('click', () => this.startGameInstant());
