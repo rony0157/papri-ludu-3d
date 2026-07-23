@@ -17,12 +17,27 @@ export class PeerManager {
     this.initAudioElement();
   }
 
+  // Audio Element configured specifically for iOS Safari (iPhone) compatibility
   initAudioElement() {
-    if (document.getElementById('remote-audio-player')) return;
+    if (document.getElementById('remote-audio-player')) {
+      this.remoteAudio = document.getElementById('remote-audio-player');
+      return;
+    }
     this.remoteAudio = document.createElement('audio');
     this.remoteAudio.id = 'remote-audio-player';
     this.remoteAudio.autoplay = true;
+    this.remoteAudio.playsInline = true;
+    this.remoteAudio.setAttribute('playsinline', '');
+    this.remoteAudio.setAttribute('webkit-playsinline', '');
+    this.remoteAudio.style.display = 'none';
     document.body.appendChild(this.remoteAudio);
+  }
+
+  // Touch trigger to unlock iOS audio element playback
+  unlockiOSAudio() {
+    if (this.remoteAudio) {
+      this.remoteAudio.play().catch(() => {});
+    }
   }
 
   // Safe non-blocking Peer connection init with timeout
@@ -30,18 +45,17 @@ export class PeerManager {
     return new Promise((resolve) => {
       let isResolved = false;
 
-      // 3-second safety fallback timeout so game modal NEVER hangs!
       const fallbackTimer = setTimeout(() => {
         if (!isResolved) {
           isResolved = true;
           this.isHost = !targetRoomId;
-          this.roomId = targetRoomId || `papri-ludu-${Math.random().toString(36).substring(2, 8)}`;
+          this.roomId = targetRoomId || `papri-ludu-local`;
           resolve({ isHost: this.isHost, roomId: this.roomId, peerId: 'local' });
         }
-      }, 3500);
+      }, 3000);
 
       try {
-        this.peer = new Peer({
+        const peerOptions = {
           debug: 1,
           config: {
             iceServers: [
@@ -49,7 +63,10 @@ export class PeerManager {
               { urls: 'stun:global.stun.twilio.com:3478' }
             ]
           }
-        });
+        };
+
+        // If targetRoomId is passed, use clean Peer ID
+        this.peer = targetRoomId ? new Peer(peerOptions) : new Peer(peerOptions);
 
         this.peer.on('open', (id) => {
           if (isResolved) return;
@@ -64,7 +81,7 @@ export class PeerManager {
             this.connectToHost(targetRoomId);
           } else {
             this.isHost = true;
-            this.roomId = `papri-ludu-${Math.random().toString(36).substring(2, 8)}`;
+            this.roomId = `papri-ludu-${Math.random().toString(36).substring(2, 6)}`;
           }
 
           this.setupMediaListeners();
@@ -77,7 +94,7 @@ export class PeerManager {
         });
 
         this.peer.on('error', (err) => {
-          console.warn('PeerJS Error (falling back to offline/local mode):', err);
+          console.warn('PeerJS fallback mode:', err);
           if (!isResolved) {
             isResolved = true;
             clearTimeout(fallbackTimer);
@@ -131,14 +148,22 @@ export class PeerManager {
 
   async startVoiceCall() {
     try {
-      this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
+        video: false
+      });
+      
       if (this.onVoiceStatusChange) this.onVoiceStatusChange('mic_ready');
 
       if (!this.isHost && this.conn && this.conn.peer) {
         this.callPeer(this.conn.peer);
       }
     } catch (err) {
-      console.warn('Microphone permission info:', err);
+      console.warn('Microphone status:', err);
       if (this.onVoiceStatusChange) this.onVoiceStatusChange('mic_denied');
     }
   }
@@ -148,7 +173,10 @@ export class PeerManager {
 
     this.mediaCall = this.peer.call(remoteId, this.localStream);
     this.mediaCall.on('stream', (remoteStream) => {
-      if (this.remoteAudio) this.remoteAudio.srcObject = remoteStream;
+      if (this.remoteAudio) {
+        this.remoteAudio.srcObject = remoteStream;
+        this.remoteAudio.play().catch(() => {});
+      }
       if (this.onVoiceStatusChange) this.onVoiceStatusChange('voice_active');
     });
   }
@@ -165,7 +193,10 @@ export class PeerManager {
       }
 
       call.on('stream', (remoteStream) => {
-        if (this.remoteAudio) this.remoteAudio.srcObject = remoteStream;
+        if (this.remoteAudio) {
+          this.remoteAudio.srcObject = remoteStream;
+          this.remoteAudio.play().catch(() => {});
+        }
         if (this.onVoiceStatusChange) this.onVoiceStatusChange('voice_active');
       });
     });

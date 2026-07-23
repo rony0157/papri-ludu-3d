@@ -14,7 +14,6 @@ export class ParticleSystem {
     const petalCount = 100;
     const geometry = new THREE.PlaneGeometry(0.35, 0.45);
     
-    // Canvas texture for glowing red rose petal
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
@@ -59,7 +58,7 @@ export class ParticleSystem {
       this.petalGroup.add(mesh);
     }
 
-    this.scene.add(this.petalGroup);
+    if (this.scene) this.scene.add(this.petalGroup);
   }
 
   // Create Bokeh Heart Sparkles (60 Hearts)
@@ -70,7 +69,6 @@ export class ParticleSystem {
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
 
-    // Draw Heart shape
     ctx.fillStyle = '#ff6b8b';
     ctx.beginPath();
     ctx.moveTo(32, 48);
@@ -109,13 +107,13 @@ export class ParticleSystem {
       this.heartGroup.add(sprite);
     }
 
-    this.scene.add(this.heartGroup);
+    if (this.scene) this.scene.add(this.heartGroup);
   }
 
-  // Heavy Rose Rain Shower Effect on Reaction Click!
+  // Heavy Rose Rain Shower Effect
   triggerRoseShower() {
     this.petals.forEach(p => {
-      p.speedY += 0.04; // Temporarily speed up falling
+      p.speedY += 0.04;
       p.mesh.position.y += Math.random() * 4;
     });
 
@@ -126,7 +124,26 @@ export class ParticleSystem {
     }, 3000);
   }
 
-  // Update particles on frame
+  // Full-Screen Kiss & Love Explosion that fills Papri's Display!
+  triggerFullKissExplosion(emoji = '💋') {
+    const container = document.body;
+    const count = 40;
+
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('div');
+      el.className = 'floating-kiss-particle';
+      el.innerText = emoji;
+      el.style.left = `${Math.random() * 95}vw`;
+      el.style.top = `${Math.random() * 85}vh`;
+      el.style.fontSize = `${28 + Math.random() * 48}px`;
+      el.style.animationDuration = `${1.8 + Math.random() * 1.5}s`;
+
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+  }
+
+  // Update 3D particles on frame
   update(time) {
     this.petals.forEach(p => {
       p.mesh.position.y -= p.speedY;
@@ -154,6 +171,7 @@ export class ParticleSystem {
   }
 
   triggerLoveBurst(color = '#ff1a53') {
+    if (!this.scene) return;
     const burstCount = 35;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(burstCount * 3);

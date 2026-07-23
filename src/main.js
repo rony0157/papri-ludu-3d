@@ -14,8 +14,14 @@ class App {
     this.engine = new LuduEngine();
     this.myPlayerIdx = 0; // Default 0 (Host / Papri)
     
-    // Call UI listeners FIRST so buttons work immediately even if WebGL is initializing!
+    // Call UI listeners FIRST so buttons work immediately
     this.initUIListeners();
+
+    // Unlock iOS Safari Audio on first touch anywhere
+    window.addEventListener('pointerdown', () => {
+      soundManager.resume();
+      if (this.peerMgr) this.peerMgr.unlockiOSAudio();
+    }, { once: true });
 
     try {
       this.initThree();
@@ -36,8 +42,8 @@ class App {
   // 1. Setup Three.js 3D Scene, Camera & Lights
   initThree() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0f0a17);
-    this.scene.fog = new THREE.FogExp2(0x0f0a17, 0.035);
+    this.scene.background = new THREE.Color(0x160d29);
+    this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
 
     this.camera = new THREE.PerspectiveCamera(
       45,
@@ -51,29 +57,24 @@ class App {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     
     if (this.container) {
       this.container.appendChild(this.renderer.domElement);
     }
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.85);
+    // High visibility lighting
+    const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.95);
     this.scene.add(ambientLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffe6ee, 1.2);
-    sunLight.position.set(8, 14, 8);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
+    const sunLight = new THREE.DirectionalLight(0xffe6ee, 1.4);
+    sunLight.position.set(6, 12, 6);
     this.scene.add(sunLight);
 
-    const pinkLight = new THREE.PointLight(0xff1a53, 1.5, 12);
+    const pinkLight = new THREE.PointLight(0xff1a53, 1.8, 14);
     pinkLight.position.set(-5, 4, -5);
     this.scene.add(pinkLight);
 
-    const greenLight = new THREE.PointLight(0x00cc88, 1.5, 12);
+    const greenLight = new THREE.PointLight(0x00cc88, 1.8, 14);
     greenLight.position.set(5, 4, 5);
     this.scene.add(greenLight);
 
@@ -95,7 +96,7 @@ class App {
     }
   }
 
-  // 3. Initialize PeerJS P2P Network
+  // 3. Initialize PeerJS P2P Network with automatic URL param joining
   initNetwork() {
     this.peerMgr = new PeerManager(
       (packet) => this.handleNetworkPacket(packet),
@@ -112,7 +113,6 @@ class App {
     }
   }
 
-  // Hide Modal Instantly & Start
   hideModal() {
     const modal = document.getElementById('room-modal');
     if (modal) {
@@ -139,7 +139,7 @@ class App {
       const res = await this.peerMgr.init(null);
       this.myPlayerIdx = 0; // Host is Papri (Red)
       const roomUrl = `${window.location.origin}${window.location.pathname}?room=${res.roomId}`;
-      this.showLovePopup(`Room Created! Share Link with Papri`);
+      this.showLovePopup(`Online Room Active! Share Link with Papri`);
     }
   }
 
@@ -151,7 +151,7 @@ class App {
     if (this.peerMgr && code) {
       const res = await this.peerMgr.init(code.trim());
       this.myPlayerIdx = 1; // Client is My Love (Green)
-      this.showLovePopup(`Joined Room with Papri! ❤️`);
+      this.showLovePopup(`Joined Online Room with Papri! ❤️`);
     }
   }
 
@@ -191,7 +191,7 @@ class App {
         const roomId = (this.peerMgr && this.peerMgr.roomId) ? this.peerMgr.roomId : 'papri-love-room';
         const roomUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
         navigator.clipboard.writeText(roomUrl);
-        alert(`Room Link Copied! Share with Papri:\n${roomUrl}`);
+        alert(`Room Link Copied! Send to Papri:\n${roomUrl}`);
       });
     }
 
@@ -215,6 +215,7 @@ class App {
   sendLoveMessage(msg) {
     try { soundManager.playRoseReaction(); } catch(e){}
     this.showLovePopup(msg);
+    if (this.particles) this.particles.triggerFullKissExplosion('💖');
     if (this.peerMgr) this.peerMgr.send('CHAT_MSG', { msg });
   }
 
@@ -343,6 +344,7 @@ class App {
       this.triggerReaction(payload.type, false);
     } else if (action === 'CHAT_MSG') {
       try { soundManager.playRoseReaction(); } catch(e){}
+      if (this.particles) this.particles.triggerFullKissExplosion('💖');
       this.showLovePopup(payload.msg);
     }
   }
@@ -357,19 +359,27 @@ class App {
       if (this.particles) {
         this.particles.triggerRoseShower();
         this.particles.triggerLoveBurst('#ff1a40');
+        this.particles.triggerFullKissExplosion('🌹');
       }
-      this.showLovePopup('🌹 Rose Rain Shower for Papri!');
+      this.showLovePopup('🌹 Rose Shower Sent To Papri!');
     } else if (type === 'kiss') {
       try { soundManager.playKissReaction(); } catch(e){}
-      if (this.particles) this.particles.triggerLoveBurst('#ff6699');
-      this.showLovePopup('💋 Kisses Sent With Love!');
+      if (this.particles) {
+        this.particles.triggerLoveBurst('#ff6699');
+        this.particles.triggerFullKissExplosion('💋');
+      }
+      this.showLovePopup('💋 Kisses Filling Papri\'s Screen!');
     } else if (type === 'hug') {
       try { soundManager.playKissReaction(); } catch(e){}
-      this.showLovePopup('🤗 Warm Hugs for Papri!');
+      if (this.particles) this.particles.triggerFullKissExplosion('🤗');
+      this.showLovePopup('🤗 Warm Hugs Sent To Papri!');
     } else if (type === 'love') {
       try { soundManager.playRoseReaction(); } catch(e){}
-      if (this.particles) this.particles.triggerLoveBurst('#ff0055');
-      this.showLovePopup('❤️ I Love You Papri Forever!');
+      if (this.particles) {
+        this.particles.triggerLoveBurst('#ff0055');
+        this.particles.triggerFullKissExplosion('❤️');
+      }
+      this.showLovePopup('❤️ Full Screen Love For Papri!');
     }
   }
 
