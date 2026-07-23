@@ -13,16 +13,18 @@ class App {
     this.container = document.getElementById('canvas-container');
     this.engine = new LuduEngine();
     this.myPlayerIdx = 0; // Default 0 (Host / Papri)
+    this.autoStartSeconds = 5;
     
-    // Call UI listeners FIRST so buttons work immediately
+    // 1. Call UI listeners FIRST so buttons work immediately
     this.initUIListeners();
 
-    // Unlock iOS Safari Audio on first touch anywhere
+    // 2. Unlock iOS Safari Audio on first touch anywhere
     window.addEventListener('pointerdown', () => {
       soundManager.resume();
       if (this.peerMgr) this.peerMgr.unlockiOSAudio();
     }, { once: true });
 
+    // 3. Initialize 3D Engine & Camera
     try {
       this.initThree();
       this.initGame3D();
@@ -30,16 +32,23 @@ class App {
       console.warn('Three.js Init Warning:', err);
     }
 
+    // 4. Initialize Network
     try {
       this.initNetwork();
     } catch (err) {
       console.warn('Network Init Warning:', err);
     }
 
+    // Update UI immediately on load
+    this.updateUI();
+
+    // 5-Second Auto Start Countdown Timer for instant entry
+    this.startAutoStartCountdown();
+
     this.animate();
   }
 
-  // 1. Setup Three.js 3D Scene, Camera & Lights
+  // 1. Setup Three.js 3D Scene, Camera & Dynamic iPhone Responsive Fitting
   initThree() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x160d29);
@@ -51,8 +60,6 @@ class App {
       0.1,
       100
     );
-    this.camera.position.set(0, 11, 11);
-    this.camera.lookAt(0, 0, 0);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -63,7 +70,7 @@ class App {
     }
 
     // High visibility lighting
-    const ambientLight = new THREE.AmbientLight(0xfff0f5, 0.95);
+    const ambientLight = new THREE.AmbientLight(0xfff0f5, 1.0);
     this.scene.add(ambientLight);
 
     const sunLight = new THREE.DirectionalLight(0xffe6ee, 1.4);
@@ -78,7 +85,30 @@ class App {
     greenLight.position.set(5, 4, 5);
     this.scene.add(greenLight);
 
+    // Initial camera position & fit
+    this.updateCameraAspect();
+
     window.addEventListener('resize', () => this.onResize());
+  }
+
+  // Camera aspect calculation fitting iPhone portrait screens
+  updateCameraAspect() {
+    if (!this.camera || !this.renderer) return;
+    const aspect = window.innerWidth / window.innerHeight;
+    this.camera.aspect = aspect;
+
+    if (aspect < 1.0) {
+      // iPhone / Mobile Portrait: move camera further back so entire 13.6u 3D board fits!
+      const dist = 14 / aspect;
+      this.camera.position.set(0, dist, dist);
+    } else {
+      // Desktop Landscape
+      this.camera.position.set(0, 11, 11);
+    }
+
+    this.camera.lookAt(0, 0, 0);
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
   // 2. Initialize 3D Objects
@@ -96,7 +126,7 @@ class App {
     }
   }
 
-  // 3. Initialize PeerJS P2P Network with automatic URL param joining
+  // 3. Initialize PeerJS P2P Network
   initNetwork() {
     this.peerMgr = new PeerManager(
       (packet) => this.handleNetworkPacket(packet),
@@ -113,7 +143,24 @@ class App {
     }
   }
 
+  // Auto-Start Timer (Guarantees game entry within 5 seconds)
+  startAutoStartCountdown() {
+    const timerText = document.getElementById('auto-start-timer');
+    if (!timerText) return;
+
+    this.countdownInterval = setInterval(() => {
+      this.autoStartSeconds--;
+      if (timerText) timerText.innerText = `(Auto starting in ${this.autoStartSeconds}s...)`;
+
+      if (this.autoStartSeconds <= 0) {
+        clearInterval(this.countdownInterval);
+        this.startGameInstant();
+      }
+    }, 1000);
+  }
+
   hideModal() {
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
     const modal = document.getElementById('room-modal');
     if (modal) {
       modal.style.display = 'none';
@@ -121,13 +168,13 @@ class App {
     }
   }
 
-  // Instant Game Start / Play Together
+  // Instant Game Start Mode
   startGameInstant() {
     this.hideModal();
     try { soundManager.startRomanticMusic(); } catch(e){}
     this.updateUI();
     this.showLovePopup(`Welcome Papri & Lover! ❤️ Game Started!`);
-    if (this.peerMgr) this.peerMgr.init(null);
+    if (this.peerMgr && !this.peerMgr.peer) this.peerMgr.init(null);
   }
 
   async createRoom() {
@@ -151,7 +198,7 @@ class App {
     if (this.peerMgr && code) {
       const res = await this.peerMgr.init(code.trim());
       this.myPlayerIdx = 1; // Client is My Love (Green)
-      this.showLovePopup(`Joined Online Room with Papri! ❤️`);
+      this.showLovePopup(`Joined Room with Papri! ❤️`);
     }
   }
 
@@ -191,7 +238,7 @@ class App {
         const roomId = (this.peerMgr && this.peerMgr.roomId) ? this.peerMgr.roomId : 'papri-love-room';
         const roomUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
         navigator.clipboard.writeText(roomUrl);
-        alert(`Room Link Copied! Send to Papri:\n${roomUrl}`);
+        alert(`Room Link Copied! Share with Papri:\n${roomUrl}`);
       });
     }
 
@@ -418,7 +465,7 @@ class App {
       if (this.engine.winner !== null) {
         banner.innerText = 'Game Over!';
       } else if (isMyTurn) {
-        banner.innerText = `❤️ It's Your Turn! Roll the Dice!`;
+        banner.innerText = `❤️ It's Your Turn! Roll the Dice 🎲`;
         banner.style.color = '#ff6699';
       } else {
         banner.innerText = `Waiting for Papri / Lover's roll...`;
@@ -442,11 +489,7 @@ class App {
   }
 
   onResize() {
-    if (this.camera && this.renderer) {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
-      this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-    }
+    this.updateCameraAspect();
   }
 
   animate(time = 0) {
