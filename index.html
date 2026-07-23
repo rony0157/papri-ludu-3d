@@ -81,7 +81,7 @@
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">2-Tab / P2P Online</span></div>
+        <div class="vh"><span class="dot"></span><span id="vs">Online Connected</span></div>
         <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
@@ -382,12 +382,22 @@ class Particles {
 class App {
   constructor() {
     this.eng = new Engine();
-    this.myId = 0; // Default Papri (Red)
 
-    // BroadcastChannel for instant 0ms 2-tab sync on same machine
+    // Check if player ID is explicitly assigned by URL ?player=1 or ?player=0
+    const urlParams = new URLSearchParams(location.search);
+    const pParam = urlParams.get('player');
+    this.myId = pParam !== null ? parseInt(pParam, 10) : null; 
+    // If myId is null, we are in Auto / Pass-and-Play / 1-Tab mode where Roll Dice controls current turn!
+
+    this.isOnlinePartnerConnected = false;
+
+    // BroadcastChannel for instant 2-tab sync on same machine
     try {
       this.bc = new BroadcastChannel('papri_ludu_channel');
-      this.bc.onmessage = (e) => this.onMsg(e.data);
+      this.bc.onmessage = (e) => {
+        this.isOnlinePartnerConnected = true;
+        this.onMsg(e.data);
+      };
     } catch(e) { this.bc = null; }
 
     // 3D Setup
@@ -434,8 +444,8 @@ class App {
       const r = e.target.getAttribute('data-r'); if(r) this.react(r,true);
     }));
 
-    // Connect PeerJS
-    this.initPeerNet();
+    // Connect PeerJS / WebSocket
+    this.initNetwork();
   }
 
   fitCam() {
@@ -448,23 +458,43 @@ class App {
     this.ren.setSize(innerWidth,innerHeight);
   }
 
-  initPeerNet() {
+  initNetwork() {
     const st = document.getElementById('status');
     const ROOM_ID = 'papri-love-3d-main-room';
 
+    // WebSocket URL check (Railway or custom WS server)
+    const urlParams = new URLSearchParams(location.search);
+    const wsParam = urlParams.get('ws');
+
+    if (wsParam) {
+      try {
+        this.ws = new WebSocket(wsParam);
+        this.ws.onopen = () => { st.textContent = '🔌 WebSocket Connected'; st.className = ''; };
+        this.ws.onmessage = (e) => {
+          const d = JSON.parse(e.data);
+          if (d.action === 'ASSIGNED') {
+            if (this.myId === null) this.myId = d.payload.playerId;
+            this.isOnlinePartnerConnected = true;
+          }
+          this.onMsg(d);
+        };
+        return;
+      } catch(e) {}
+    }
+
     if (window.Peer) {
       try {
-        // Try creating host
         this.peer = new Peer(ROOM_ID, { debug: 1 });
 
         this.peer.on('open', (id) => {
-          this.myId = 0; // Host = Papri
-          st.textContent = '🌹 Papri ❤️ (Red) — Waiting for partner...';
+          if (this.myId === null) this.myId = 0; // Host = Papri
+          st.textContent = '🌹 Papri ❤️ (Red) — Ready to Play!';
           st.className = '';
           this.ui();
 
           this.peer.on('connection', (c) => {
             this.conn = c;
+            this.isOnlinePartnerConnected = true;
             this.setupConn(c);
             st.textContent = '🟢 Connected with My Love!';
             this.popup('My Love Connected! Let\'s play! ❤️');
@@ -473,12 +503,12 @@ class App {
 
         this.peer.on('error', (err) => {
           if (err.type === 'unavailable-id') {
-            // Host exists! Become Client (My Love)
             if (this.peer) this.peer.destroy();
             this.peer = new Peer({ debug: 1 });
             this.peer.on('open', () => {
-              this.myId = 1; // Client = Green
-              st.textContent = '💖 My Love (Green) — Connecting to Papri...';
+              if (this.myId === null) this.myId = 1; // Client = Green
+              this.isOnlinePartnerConnected = true;
+              st.textContent = '💖 My Love (Green) — Connected!';
               this.conn = this.peer.connect(ROOM_ID, { reliable: true });
               this.setupConn(this.conn);
               this.ui();
@@ -489,9 +519,6 @@ class App {
         st.textContent = '✨ Ready to Play! (Pass & Play / 2-Tab)';
         this.ui();
       }
-    } else {
-      st.textContent = '✨ Ready to Play! (Pass & Play / 2-Tab)';
-      this.ui();
     }
   }
 
@@ -500,6 +527,7 @@ class App {
     c.on('open', () => {
       st.textContent = '🟢 Connected Live!';
       st.className = '';
+      this.isOnlinePartnerConnected = true;
       this.ui();
     });
     c.on('data', (d) => this.onMsg(d));
@@ -525,11 +553,16 @@ class App {
     const msg = { action, payload, sender: this.myId };
     if (this.bc) try { this.bc.postMessage(msg); } catch(e) {}
     if (this.conn && this.conn.open) try { this.conn.send(msg); } catch(e) {}
+    if (this.ws && this.ws.readyState === 1) try { this.ws.send(JSON.stringify(msg)); } catch(e) {}
   }
 
   rollDice() {
-    // Only roll if it's my turn
-    if (this.eng.turn !== this.myId) return;
+    // If myId is set AND online partner is connected, enforce player turn!
+    // If standalone / 1-tab testing, ALLOW ROLLING FOR CURRENT TURN ALWAYS!
+    if (this.isOnlinePartnerConnected && this.myId !== null && this.eng.turn !== this.myId) {
+      return;
+    }
+
     if (this.eng.dr || this.eng.winner !== null) return;
     const v = this.eng.roll(); if (!v) return;
 
@@ -574,7 +607,9 @@ class App {
   }
 
   click(e) {
-    if (this.eng.turn !== this.myId || !this.eng.dr) return;
+    if (this.isOnlinePartnerConnected && this.myId !== null && this.eng.turn !== this.myId) return;
+    if (!this.eng.dr) return;
+
     const vm = this.eng.validMoves(); if (!vm.length) return;
     this.mouse.x = (e.clientX/innerWidth)*2-1;
     this.mouse.y = -(e.clientY/innerHeight)*2+1;
@@ -602,14 +637,13 @@ class App {
   }
   ui() {
     const t = this.eng.turn;
-    const isMyTurn = (t === this.myId);
+    const isMyTurn = (this.myId === null || !this.isOnlinePartnerConnected) ? true : (t === this.myId);
 
     const p0=document.getElementById('p0'),p1=document.getElementById('p1');
     if(p0) p0.classList.toggle('on',t===0);
     if(p1) p1.classList.toggle('on',t===1);
 
     const btn=document.getElementById('rd');
-    // Enable roll dice button if it's player's turn and dice hasn't been rolled yet
     if(btn) {
       btn.disabled = !isMyTurn || this.eng.dr || this.eng.winner!==null;
     }
