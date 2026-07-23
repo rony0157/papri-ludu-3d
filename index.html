@@ -43,18 +43,18 @@
     /* Status Bar */
     #status { position:fixed; top:46px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.25); border:1px solid rgba(0,204,136,.6); color:#66ffcc; padding:2px 10px; border-radius:10px; font-size:9px; font-weight:700; pointer-events:none; transition:all .3s; white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.8); }
 
-    /* Footer Layout */
+    /* Footer Layout - Fixed compact widths to prevent long black bars in landscape! */
     .footer { display:flex; flex-direction:column; align-items:center; gap:3px; width:100%; margin-bottom:2px; }
 
-    .players-bar { display:flex; justify-content:space-between; align-items:center; width:100%; gap:4px; }
-    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:3px 6px; border-radius:10px; display:flex; align-items:center; gap:4px; transition:all .3s; flex:1; max-width:48%; }
+    .players-bar { display:flex; justify-content:space-between; align-items:center; width:100%; max-width:380px; margin:0 auto; gap:8px; }
+    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:4px 8px; border-radius:12px; display:flex; align-items:center; gap:6px; width:140px; max-width:140px; flex-shrink:0; transition:all .3s; }
     .pc.on { border-color:var(--pink); box-shadow:0 0 14px rgba(255,26,83,.7); transform:translateY(-1px); }
     .av { width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:11px; border:2px solid #fff; flex-shrink:0; }
-    .pi h3 { font-size:10px; font-weight:800; white-space:nowrap; } .pi p { font-size:8px; opacity:.85; }
+    .pi h3 { font-size:10px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .pi p { font-size:8px; opacity:.85; }
 
     .cc { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; }
     
-    .mb { display:flex; gap:3px; overflow-x:auto; max-width:96vw; padding:2px 4px; background:var(--panel); backdrop-filter:blur(10px); border-radius:10px; border:1px solid var(--glass); }
+    .mb { display:flex; gap:3px; overflow-x:auto; max-width:380px; padding:2px 4px; background:var(--panel); backdrop-filter:blur(10px); border-radius:10px; border:1px solid var(--glass); }
     .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:9px; font-weight:600; padding:2px 6px; border-radius:6px; cursor:pointer; white-space:nowrap; }
     
     .rp { display:flex; gap:3px; background:var(--panel); backdrop-filter:blur(12px); padding:2px 6px; border-radius:12px; border:1px solid var(--glass); }
@@ -495,18 +495,17 @@ class App {
     const a = innerWidth / innerHeight;
     this.cam.aspect = a;
     
-    // Mathematically calculated camera distance so 14.5x14.5 board fits 100% inside screen boundaries!
     if (a < 1) { 
-      // Portrait phone mode: calculate distance based on horizontal aspect to prevent cutting off left/right/top/bottom!
+      // Portrait phone mode
       const d = Math.max(16, 14.8 / a);
       const py = d * 0.78;
       const pz = d * 0.62;
       this.cam.position.set(0, py, pz);
-      this.cam.lookAt(0, -1.2, 0); // Tilt slightly down so board sits in upper-center of screen
+      this.cam.lookAt(0, -1.2, 0);
     } else {
-      // Landscape desktop
-      this.cam.position.set(0, 11, 11);
-      this.cam.lookAt(0, 0, 0);
+      // Landscape mode (desktop or phone turned sideways):
+      this.cam.position.set(0, 12, 11);
+      this.cam.lookAt(0, -0.5, 0);
     }
 
     this.cam.updateProjectionMatrix();
