@@ -4,45 +4,26 @@ export class LudoBoard {
   constructor(scene) {
     this.scene = scene;
     this.boardGroup = new THREE.Group();
-    this.trackPositions = []; // 52 track cell 3D coordinates
-    this.homePaths = {        // Home paths for players
-      0: [], // Red (Papri)
-      1: [], // Green (Lover)
-      2: [], // Yellow
-      3: []  // Blue
-    };
-    this.basePositions = {    // Initial 4 home base spots per player
-      0: [],
-      1: [],
-      2: [],
-      3: []
-    };
+    this.trackPositions = [];
+    this.homePaths = { 0: [], 1: [], 2: [], 3: [] };
+    this.basePositions = { 0: [], 1: [], 2: [], 3: [] };
 
     this.createBoard();
   }
 
   createBoard() {
     // 1. Outer Board Base Box
-    const baseGeo = new THREE.BoxGeometry(13.2, 0.4, 13.2);
-    const baseMat = new THREE.MeshStandardMaterial({
-      color: 0x1f172b, // Dark velvet / midnight purple
-      roughness: 0.3,
-      metalness: 0.2
-    });
+    const baseGeo = new THREE.BoxGeometry(13.6, 0.4, 13.6);
+    const baseMat = new THREE.MeshLambertMaterial({ color: 0x1f172b });
     const baseMesh = new THREE.Mesh(baseGeo, baseMat);
     baseMesh.position.y = -0.2;
-    baseMesh.receiveShadow = true;
     this.boardGroup.add(baseMesh);
 
     // Rose Gold Outer Rim Frame
-    const rimGeo = new THREE.BoxGeometry(13.6, 0.5, 13.6);
-    const rimMat = new THREE.MeshStandardMaterial({
-      color: 0xe6a1b0, // Rose Gold
-      metalness: 0.8,
-      roughness: 0.2
-    });
+    const rimGeo = new THREE.BoxGeometry(14.0, 0.48, 14.0);
+    const rimMat = new THREE.MeshLambertMaterial({ color: 0xe6a1b0 });
     const rimMesh = new THREE.Mesh(rimGeo, rimMat);
-    rimMesh.position.y = -0.26;
+    rimMesh.position.y = -0.25;
     this.boardGroup.add(rimMesh);
 
     // 2. Generate 15x15 Ludo Grid
@@ -55,30 +36,20 @@ export class LudoBoard {
       z: gridOffset + row * cellSize
     });
 
-    const createCell = (col, row, color, isRaised = false, hasHeart = false) => {
+    const createCell = (col, row, colorHex, isRaised = false, hasHeart = false) => {
       const coord = getCoord(col, row);
-      const cellGeo = new THREE.BoxGeometry(cellSize * 0.92, isRaised ? 0.2 : 0.08, cellSize * 0.92);
-      const cellMat = new THREE.MeshStandardMaterial({
-        color: color,
-        roughness: 0.4,
-        metalness: 0.1
-      });
+      const cellGeo = new THREE.BoxGeometry(cellSize * 0.92, isRaised ? 0.18 : 0.08, cellSize * 0.92);
+      const cellMat = new THREE.MeshLambertMaterial({ color: colorHex });
       const cellMesh = new THREE.Mesh(cellGeo, cellMat);
-      cellMesh.position.set(coord.x, isRaised ? 0.1 : 0.04, coord.z);
-      cellMesh.receiveShadow = true;
-      cellMesh.castShadow = true;
+      cellMesh.position.set(coord.x, isRaised ? 0.09 : 0.04, coord.z);
       this.boardGroup.add(cellMesh);
 
       if (hasHeart) {
-        const heartGeo = new THREE.OctahedronGeometry(0.15, 0);
-        const heartMat = new THREE.MeshStandardMaterial({
-          color: 0xff3366,
-          emissive: 0xff0044,
-          emissiveIntensity: 0.6
-        });
+        const heartGeo = new THREE.SphereGeometry(0.16, 8, 8);
+        heartGeo.scale(1, 1.2, 0.8);
+        const heartMat = new THREE.MeshBasicMaterial({ color: 0xff3366 });
         const heartMesh = new THREE.Mesh(heartGeo, heartMat);
-        heartMesh.position.set(coord.x, 0.16, coord.z);
-        heartMesh.rotation.y = Math.PI / 4;
+        heartMesh.position.set(coord.x, 0.18, coord.z);
         this.boardGroup.add(heartMesh);
       }
 
@@ -94,38 +65,24 @@ export class LudoBoard {
     const COLOR_SAFE = 0x5a3e75;
 
     // 3. Draw Home Base Quadrants (6x6 cells each)
-    // Red Base (Top-Left: col 0..5, row 0..5)
     this.createBaseArea(0, 0, 5, 5, COLOR_RED, 0, getCoord);
-    // Yellow Base (Top-Right: col 9..14, row 0..5)
     this.createBaseArea(9, 0, 14, 5, COLOR_YELLOW, 2, getCoord);
-    // Blue Base (Bottom-Left: col 0..5, row 9..14)
     this.createBaseArea(0, 9, 5, 14, COLOR_BLUE, 3, getCoord);
-    // Green Base (Bottom-Right: col 9..14, row 9..14)
     this.createBaseArea(9, 9, 14, 14, COLOR_GREEN, 1, getCoord);
 
-    // 4. Center Home Triangle / Trophy (col 6..8, row 6..8)
+    // 4. Center Home Triangle / Trophy
     const centerCoord = getCoord(7, 7);
     const trophyGeo = new THREE.ConeGeometry(1.2, 1.0, 4);
-    const trophyMat = new THREE.MeshStandardMaterial({
-      color: 0xff0055,
-      emissive: 0xff0044,
-      emissiveIntensity: 0.5,
-      roughness: 0.1,
-      metalness: 0.9
-    });
+    const trophyMat = new THREE.MeshBasicMaterial({ color: 0xff0055 });
     const trophyMesh = new THREE.Mesh(trophyGeo, trophyMat);
     trophyMesh.position.set(centerCoord.x, 0.5, centerCoord.z);
     trophyMesh.rotation.y = Math.PI / 4;
     this.boardGroup.add(trophyMesh);
 
     // Glowing Heart on top of Center Trophy
-    const topHeartGeo = new THREE.SphereGeometry(0.35, 16, 16);
+    const topHeartGeo = new THREE.SphereGeometry(0.35, 12, 12);
     topHeartGeo.scale(1, 1.2, 0.8);
-    const topHeartMat = new THREE.MeshStandardMaterial({
-      color: 0xff3366,
-      emissive: 0xff1a53,
-      emissiveIntensity: 0.8
-    });
+    const topHeartMat = new THREE.MeshBasicMaterial({ color: 0xff3366 });
     const topHeart = new THREE.Mesh(topHeartGeo, topHeartMat);
     topHeart.position.set(centerCoord.x, 1.1, centerCoord.z);
     this.boardGroup.add(topHeart);
@@ -171,7 +128,9 @@ export class LudoBoard {
       this.homePaths[1].push(createCell(c, 7, COLOR_GREEN, true));
     }
 
-    this.scene.add(this.boardGroup);
+    if (this.scene) {
+      this.scene.add(this.boardGroup);
+    }
   }
 
   createBaseArea(startCol, startRow, endCol, endRow, mainColor, playerIdx, getCoord) {
@@ -180,18 +139,14 @@ export class LudoBoard {
     const coordCenter = getCoord(centerCol, centerRow);
 
     const baseGeo = new THREE.BoxGeometry(4.6, 0.18, 4.6);
-    const baseMat = new THREE.MeshStandardMaterial({
-      color: mainColor,
-      roughness: 0.3,
-      metalness: 0.3
-    });
+    const baseMat = new THREE.MeshLambertMaterial({ color: mainColor });
     const baseMesh = new THREE.Mesh(baseGeo, baseMat);
     baseMesh.position.set(coordCenter.x, 0.09, coordCenter.z);
     this.boardGroup.add(baseMesh);
 
     // Inner White Pocket
     const innerGeo = new THREE.BoxGeometry(3.6, 0.22, 3.6);
-    const innerMat = new THREE.MeshStandardMaterial({ color: 0xfff0f5 });
+    const innerMat = new THREE.MeshLambertMaterial({ color: 0xfff0f5 });
     const innerMesh = new THREE.Mesh(innerGeo, innerMat);
     innerMesh.position.set(coordCenter.x, 0.11, coordCenter.z);
     this.boardGroup.add(innerMesh);
@@ -206,8 +161,8 @@ export class LudoBoard {
       const posX = coordCenter.x + off[0] * 1.0;
       const posZ = coordCenter.z + off[1] * 1.0;
 
-      const spotGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.24, 16);
-      const spotMat = new THREE.MeshStandardMaterial({ color: mainColor });
+      const spotGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.24, 12);
+      const spotMat = new THREE.MeshLambertMaterial({ color: mainColor });
       const spotMesh = new THREE.Mesh(spotGeo, spotMat);
       spotMesh.position.set(posX, 0.12, posZ);
       this.boardGroup.add(spotMesh);
