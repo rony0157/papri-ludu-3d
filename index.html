@@ -3,67 +3,74 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Papri & My Love - Real 3D Ludo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <title>Papri & My Love - 3D Romantic Ludo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
   </script>
   <style>
     :root {
-      --bg: #0f0a17; --panel: rgba(26,17,40,0.92); --pink: #ff1a53;
+      --bg: #0f0a17; --panel: rgba(26, 15, 40, 0.94); --pink: #ff1a53;
       --pink-l: #ff6699; --green: #00cc88; --text: #fff0f5;
-      --glass: rgba(255,102,153,0.35);
+      --glass: rgba(255, 102, 153, 0.35);
     }
     * { box-sizing:border-box; margin:0; padding:0; user-select:none; font-family:'Outfit',sans-serif; -webkit-tap-highlight-color:transparent; }
     body,html { width:100%; height:100%; height:100dvh; overflow:hidden; background:var(--bg); color:var(--text); position:fixed; }
-    #cv { width:100vw; height:100vh; height:100dvh; position:fixed; top:0; left:0; z-index:1; touch-action:none; background:#160d29; }
+
+    #cv { width:100vw; height:100vh; height:100dvh; position:fixed; top:0; left:0; z-index:1; touch-action:none; background:#140b24; }
     #cv canvas { width:100%!important; height:100%!important; display:block; }
 
-    .ticker { position:absolute; top:0; left:0; width:100%; background:linear-gradient(90deg,rgba(255,26,83,.95),rgba(153,0,102,.95)); color:#fff; padding:3px 10px; font-size:11px; font-weight:600; z-index:15; text-align:center; white-space:nowrap; overflow:hidden; }
+    /* Top Ticker */
+    .ticker { position:absolute; top:0; left:0; width:100%; background:linear-gradient(90deg,#ff1a53,#990066); color:#fff; padding:2px 8px; font-size:10px; font-weight:700; z-index:15; text-align:center; white-space:nowrap; overflow:hidden; }
     .ticker span { display:inline-block; animation:tk 18s linear infinite; }
     @keyframes tk { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
 
-    #ui { position:absolute; top:22px; left:0; width:100%; height:calc(100% - 22px); z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:6px; }
+    /* UI Overlay */
+    #ui { position:absolute; top:18px; left:0; width:100%; height:calc(100% - 18px); z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:6px; }
     .ia { pointer-events:auto; }
 
-    header { display:flex; justify-content:space-between; align-items:center; background:var(--panel); backdrop-filter:blur(14px); border:1px solid var(--glass); padding:5px 10px; border-radius:16px; box-shadow:0 6px 24px rgba(0,0,0,.4); }
+    /* Header */
+    header { display:flex; justify-content:space-between; align-items:center; background:var(--panel); backdrop-filter:blur(14px); border:1px solid var(--glass); padding:4px 10px; border-radius:14px; box-shadow:0 4px 20px rgba(0,0,0,.5); }
     .brand h1 { font-family:'Dancing Script',cursive; font-size:18px; background:linear-gradient(135deg,#ff6699,#ff1a53); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
     .hp { display:inline-block; animation:pu 1.5s infinite; }
     @keyframes pu { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
-    .hud { display:flex; align-items:center; gap:5px; }
-    .bi { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:var(--text); padding:4px 8px; border-radius:10px; cursor:pointer; font-weight:600; font-size:10px; transition:all .3s; }
+    
+    .hud { display:flex; align-items:center; gap:6px; }
+    .bi { background:rgba(255,255,255,.12); border:1px solid var(--glass); color:var(--text); padding:4px 10px; border-radius:10px; cursor:pointer; font-weight:700; font-size:10px; transition:all .2s; }
     .bi:hover { background:var(--pink); }
-    .vh { display:flex; align-items:center; gap:4px; padding:4px 6px; background:rgba(0,204,136,.15); border:1px solid rgba(0,204,136,.4); border-radius:8px; font-size:10px; font-weight:600; }
-    .dot { width:6px; height:6px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pu 1s infinite; }
 
-    .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:4px; margin-bottom: 4px; }
-    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:6px 8px; border-radius:14px; display:flex; align-items:center; gap:6px; min-width:85px; transition:all .3s; flex-shrink:0; }
-    .pc.on { border-color:var(--pink); box-shadow:0 0 16px rgba(255,26,83,.6); transform:translateY(-2px); }
-    .av { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:14px; border:2px solid #fff; }
-    .pi h3 { font-size:11px; font-weight:700; } .pi p { font-size:9px; opacity:.8; }
+    /* Status Bar */
+    #status { position:fixed; top:46px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.25); border:1px solid rgba(0,204,136,.6); color:#66ffcc; padding:2px 10px; border-radius:10px; font-size:9px; font-weight:700; pointer-events:none; transition:all .3s; white-space:nowrap; text-shadow:0 1px 2px rgba(0,0,0,.8); }
 
-    .cc { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
-    .mb { display:flex; gap:3px; overflow-x:auto; max-width:85vw; padding:2px 4px; background:var(--panel); backdrop-filter:blur(10px); border-radius:12px; border:1px solid var(--glass); }
-    .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:9px; font-weight:600; padding:3px 6px; border-radius:8px; cursor:pointer; white-space:nowrap; transition:all .2s; }
-    .bm:hover { background:var(--pink); }
-    .rp { display:flex; gap:3px; background:var(--panel); backdrop-filter:blur(12px); padding:2px 6px; border-radius:14px; border:1px solid var(--glass); }
-    .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:12px; padding:3px 6px; border-radius:8px; cursor:pointer; transition:transform .2s; }
-    .br:hover { transform:scale(1.15); background:var(--pink); }
+    /* Footer Layout */
+    .footer { display:flex; flex-direction:column; align-items:center; gap:4px; width:100%; margin-bottom:2px; }
 
-    /* Dice Controls & Big Display */
+    .players-bar { display:flex; justify-content:space-between; align-items:center; width:100%; gap:4px; }
+    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:4px 8px; border-radius:12px; display:flex; align-items:center; gap:5px; transition:all .3s; flex:1; max-width:48%; }
+    .pc.on { border-color:var(--pink); box-shadow:0 0 16px rgba(255,26,83,.7); transform:translateY(-1px); }
+    .av { width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:12px; border:2px solid #fff; flex-shrink:0; }
+    .pi h3 { font-size:10px; font-weight:800; white-space:nowrap; } .pi p { font-size:8px; opacity:.85; }
+
+    .cc { display:flex; flex-direction:column; align-items:center; gap:3px; width:100%; }
+    
+    .mb { display:flex; gap:3px; overflow-x:auto; max-width:96vw; padding:2px 4px; background:var(--panel); backdrop-filter:blur(10px); border-radius:10px; border:1px solid var(--glass); }
+    .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:9px; font-weight:600; padding:2px 6px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+    
+    .rp { display:flex; gap:3px; background:var(--panel); backdrop-filter:blur(12px); padding:2px 6px; border-radius:12px; border:1px solid var(--glass); }
+    .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:11px; padding:2px 6px; border-radius:6px; cursor:pointer; }
+
+    /* Dice Box & Button */
     .dice-container { display:flex; align-items:center; gap:8px; }
-    .dice-val-box { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:20px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 12px rgba(255,26,83,.5); }
-    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:14px; font-weight:700; padding:10px 22px; border:none; border-radius:24px; cursor:pointer; box-shadow:0 6px 20px rgba(255,26,83,.6); transition:all .3s; }
-    #rd:hover { transform:scale(1.06); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-    #tb { font-size:12px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
+    .dice-val-box { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:20px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 12px rgba(255,26,83,.6); }
+    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:13px; font-weight:800; padding:9px 24px; border:none; border-radius:20px; cursor:pointer; box-shadow:0 6px 18px rgba(255,26,83,.6); transition:all .2s; }
+    #rd:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    #tb { font-size:11px; font-weight:800; text-shadow:0 2px 4px rgba(0,0,0,.9); text-align:center; }
 
-    /* 2D Token Picker Buttons overlay */
     .token-picker-bar { display:flex; gap:4px; margin-top:2px; flex-wrap:wrap; justify-content:center; }
-    .btn-pick-token { background:linear-gradient(135deg,#00cc88,#009966); color:#fff; font-size:11px; font-weight:700; padding:5px 12px; border-radius:12px; border:none; cursor:pointer; box-shadow:0 3px 10px rgba(0,204,136,.5); transition:transform .2s; }
-    .btn-pick-token:hover { transform:scale(1.08); }
+    .btn-pick-token { background:linear-gradient(135deg,#00cc88,#009966); color:#fff; font-size:10px; font-weight:800; padding:4px 10px; border-radius:10px; border:none; cursor:pointer; box-shadow:0 3px 10px rgba(0,204,136,.5); }
 
-    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:12px 22px; border-radius:24px; font-size:15px; font-weight:700; box-shadow:0 10px 28px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
+    .pop { position:absolute; top:32%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.96); color:#fff; padding:10px 20px; border-radius:20px; font-size:14px; font-weight:800; box-shadow:0 10px 28px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
     @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
 
     .fk { position:fixed; pointer-events:none; z-index:300; animation:fb 2.5s forwards ease-out; filter:drop-shadow(0 4px 12px rgba(255,26,83,.8)); }
@@ -71,30 +78,31 @@
 
     .mo { position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh; background:rgba(10,5,20,.88); backdrop-filter:blur(10px); display:flex; justify-content:center; align-items:center; z-index:400; }
     .mo.hid { display:none!important; }
-    .mx { background:rgba(26,17,40,.95); border:2px solid var(--glass); border-radius:24px; padding:20px; width:90%; max-width:360px; text-align:center; box-shadow:0 16px 48px rgba(0,0,0,.6); }
+    .mx { background:rgba(26,17,40,.95); border:2px solid var(--glass); border-radius:24px; padding:20px; width:90%; max-width:340px; text-align:center; box-shadow:0 16px 48px rgba(0,0,0,.6); }
     .mx h2 { font-family:'Dancing Script',cursive; font-size:28px; margin-bottom:6px; color:var(--pink-l); }
     .mx h3 { font-size:22px; color:var(--pink); margin-bottom:14px; }
-    .mx p { margin-bottom:12px; font-size:12px; opacity:.9; }
     .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:10px; border-radius:12px; border:none; font-size:13px; font-weight:700; cursor:pointer; }
-
-    #status { position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:3px 12px; border-radius:10px; font-size:10px; font-weight:600; pointer-events:none; transition:all .3s; white-space:nowrap; }
   </style>
 </head>
 <body>
   <div id="cv"></div>
-  <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Real Ludo 3D Rules 🎲</span></div>
+  <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | Real 3D Ludo Game 🎲</span></div>
   <div id="status">✨ Ready to Play!</div>
 
   <div id="ui">
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">2-Player Room</span></div>
-        <button class="bi" id="bs">🔗 Share Room Link</button>
+        <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
+
     <div class="footer">
-      <div class="pc ia" id="p0"><div class="av">🌹</div><div class="pi"><h3>Papri ❤️</h3><p>Red Tokens</p></div></div>
+      <div class="players-bar ia">
+        <div class="pc" id="p0"><div class="av">🌹</div><div class="pi"><h3>Papri ❤️</h3><p>Red Tokens</p></div></div>
+        <div class="pc" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green Tokens</p></div></div>
+      </div>
+
       <div class="cc ia">
         <div class="mb">
           <button class="bm" data-m="I love you! ❤️">💌 Love</button>
@@ -115,7 +123,6 @@
         <div class="token-picker-bar" id="tp-bar"></div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
-      <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green Tokens</p></div></div>
     </div>
   </div>
 
@@ -173,11 +180,11 @@ class Engine {
       const e = tk.sc + this.dv;
       for (let s = tk.sc+1; s <= e; s++) traj.push(this.gpos(pi,s));
       tk.sc = e;
-      if (tk.sc === 57) { tk.st = 'DONE'; this.extra = true; } // Reaching home gives bonus turn!
+      if (tk.sc === 57) { tk.st = 'DONE'; this.extra = true; }
       else if (tk.sc > 51) tk.st = 'HOME';
     }
     const fp = this.gpos(pi, tk.sc);
-    const safe = [0,8,13,21,26,34,39,47]; // SAFE STAR CELLS
+    const safe = [0,8,13,21,26,34,39,47];
     if (fp.t === 'T' && !safe.includes(fp.i)) {
       const oi = 1 - pi;
       this.pl[oi].tokens.forEach(ot => {
@@ -186,7 +193,7 @@ class Engine {
           if (op.t === 'T' && op.i === fp.i) {
             ot.st = 'BASE'; ot.sc = 0;
             cap = { pi: oi, ti: ot.id };
-            this.extra = true; // Capturing opponent gives bonus turn!
+            this.extra = true;
           }
         }
       });
@@ -212,7 +219,7 @@ class Board {
     const s = this.scene, g = this.g;
     const rim = new THREE.Mesh(new THREE.BoxGeometry(14,.48,14), new THREE.MeshLambertMaterial({color:0xe6a1b0}));
     rim.position.y = -0.25; g.add(rim);
-    const base = new THREE.Mesh(new THREE.BoxGeometry(13.6,.4,13.6), new THREE.MeshLambertMaterial({color:0x1f172b}));
+    const base = new THREE.Mesh(new THREE.BoxGeometry(13.6,.4,13.6), new THREE.MeshLambertMaterial({color:0x281938}));
     base.position.y = -0.2; g.add(base);
 
     const cs = 0.8, off = -5.6;
@@ -223,9 +230,8 @@ class Board {
       m.position.set(p.x, raised?.09:.04, p.z); g.add(m);
 
       if (isStar) {
-        // Add 3D Star marker on safe cells
-        const star = new THREE.Mesh(new THREE.ConeGeometry(.22,.18,5), new THREE.MeshBasicMaterial({color:0xffd700}));
-        star.position.set(p.x, .16, p.z);
+        const star = new THREE.Mesh(new THREE.ConeGeometry(.24,.2,5), new THREE.MeshBasicMaterial({color:0xffd700}));
+        star.position.set(p.x, .18, p.z);
         star.rotation.x = Math.PI;
         g.add(star);
       }
@@ -233,7 +239,7 @@ class Board {
       return p;
     };
 
-    const CR=0xff2a55, CG=0x00cc88, CY=0xffcc00, CB=0x3399ff, CT=0x2d223d, CS=0x6a488f;
+    const CR=0xff1a4c, CG=0x00d98c, CY=0xffcc00, CB=0x3399ff, CT=0x3a294c, CS=0x7e54a3;
 
     this.makeBase(0,0,5,5,CR,0,gc); this.makeBase(9,0,14,5,CY,2,gc);
     this.makeBase(0,9,5,14,CB,3,gc); this.makeBase(9,9,14,14,CG,1,gc);
@@ -441,16 +447,19 @@ class App {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x160d29);
     this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
-    this.cam = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    
+    // Camera FOV and positioning for phone display optimization
+    this.cam = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
     this.ren = new THREE.WebGLRenderer({antialias:true,alpha:false});
     this.ren.setSize(innerWidth,innerHeight);
     this.ren.setPixelRatio(Math.min(devicePixelRatio,2));
     document.getElementById('cv').appendChild(this.ren.domElement);
 
-    this.scene.add(new THREE.AmbientLight(0xfff0f5,1.0));
-    const s=new THREE.DirectionalLight(0xffe6ee,1.4);s.position.set(6,12,6);this.scene.add(s);
-    const pk=new THREE.PointLight(0xff1a53,1.8,14);pk.position.set(-5,4,-5);this.scene.add(pk);
-    const gn=new THREE.PointLight(0x00cc88,1.8,14);gn.position.set(5,4,5);this.scene.add(gn);
+    // High brightness lighting so 3D board is crystal clear on mobile
+    this.scene.add(new THREE.AmbientLight(0xfff0f5, 1.6));
+    const sun = new THREE.DirectionalLight(0xfff0fa, 1.8); sun.position.set(6,14,8); this.scene.add(sun);
+    const pk = new THREE.PointLight(0xff1a53, 2.0, 16); pk.position.set(-6,5,-6); this.scene.add(pk);
+    const gn = new THREE.PointLight(0x00cc88, 2.0, 16); gn.position.set(6,5,6); this.scene.add(gn);
 
     this.fitCam();
     this.board = new Board(this.scene);
@@ -486,11 +495,10 @@ class App {
     const a = innerWidth / innerHeight;
     this.cam.aspect = a;
     if (a < 1) { 
-      // Mobile / Portrait view camera positioning so 3D board fits phone screen perfectly
-      const dist = 16.5 / a;
-      this.cam.position.set(0, dist * 0.88, dist * 0.82);
+      // Mobile Phone Viewport fit: position camera so 3D Ludo Board fills upper 65% of screen BIG and BOLD!
+      this.cam.position.set(0, 11.8, 9.2);
     } else {
-      this.cam.position.set(0, 11, 11);
+      this.cam.position.set(0, 10.5, 10.5);
     }
     this.cam.lookAt(0, 0, 0);
     this.cam.updateProjectionMatrix();
