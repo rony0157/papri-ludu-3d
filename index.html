@@ -130,7 +130,6 @@ class Engine {
   }
   roll() {
     if (this.dr || this.winner !== null) return null;
-    // True Cryptographically/Uniformly Random Dice 1..6
     const randomArray = new Uint32Array(1);
     window.crypto.getRandomValues(randomArray);
     this.dv = (randomArray[0] % 6) + 1;
@@ -551,7 +550,7 @@ class App {
       const dvBox = document.getElementById('dv-box');
       if (dvBox) dvBox.textContent = d.payload.val;
 
-      if (this.dice) this.dice.roll(d.payload.val, () => this.ui());
+      if (this.dice) this.dice.roll(d.payload.val, () => this.afterDice());
     } else if (d.action === 'MOVE_TOKEN') {
       this.doMove(d.payload.tokenId, false);
     } else if (d.action === 'PASS_TURN') {
@@ -578,7 +577,6 @@ class App {
     if (this.eng.dr || this.eng.winner !== null) return;
     const v = this.eng.roll(); if (!v) return;
 
-    // Display rolled value on 2D Box instantly
     const dvBox = document.getElementById('dv-box');
     if (dvBox) dvBox.textContent = v;
 
@@ -602,10 +600,21 @@ class App {
         this.ui();
       }, 700);
     } else if (vm.length === 1) {
+      // Exactly 1 valid token -> Auto move!
       this.doMove(vm[0], true);
     } else {
-      this.tokens.highlight(this.eng.turn, vm);
-      this.ui();
+      // Multiple valid tokens -> Check if ALL tokens are in BASE (e.g. rolled a 6 with all 4 in base)
+      const allInBase = vm.every(id => this.eng.pl[this.eng.turn].tokens[id].st === 'BASE');
+      if (allInBase) {
+        // AUTO-MOVE first base token out so player gets extra turn & game NEVER gets stuck!
+        this.popup('🎉 ROLLED A 6! Token Unlocked + Extra Turn! 🎲');
+        this.doMove(vm[0], true);
+      } else {
+        // Tokens are on track: highlight them and guide player to tap a token on 3D board
+        this.tokens.highlight(this.eng.turn, vm);
+        this.popup('👆 Tap a glowing token on the board to move!');
+        this.ui();
+      }
     }
   }
 
@@ -624,6 +633,11 @@ class App {
         if (t) { t.mesh.position.set(b.x,b.y,b.z); t.pos = b; }
       }
       this.tokens.highlight(-1,[]);
+
+      if (r.ext && r.winner === null) {
+        this.popup('✨ EXTRA TURN! Roll Again! 🎲');
+      }
+
       if (r.winner !== null) this.victory(r.winner); else this.ui();
     });
   }
@@ -674,8 +688,13 @@ class App {
     if(tb) {
       if (this.eng.winner!==null) tb.innerText='🎉 Game Over!';
       else if (isMyTurn) {
-        tb.innerText = t === 0 ? '❤️ Papri\'s Turn! Roll 🎲' : '💖 My Love\'s Turn! Roll 🎲';
-        tb.style.color='#ff6699';
+        if (this.eng.dr) {
+          tb.innerText = '👆 Tap a glowing token on the board to move!';
+          tb.style.color = '#ffcc00';
+        } else {
+          tb.innerText = t === 0 ? '❤️ Papri\'s Turn! Roll 🎲' : '💖 My Love\'s Turn! Roll 🎲';
+          tb.style.color='#ff6699';
+        }
       } else {
         tb.innerText = t === 0 ? 'Waiting for Papri\'s roll...' : 'Waiting for Partner\'s roll...';
         tb.style.color='#fff';
