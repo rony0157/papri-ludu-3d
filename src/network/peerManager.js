@@ -11,6 +11,7 @@ export class PeerManager {
     this.roomId = null;
     this.myPeerId = null;
     this.isMicMuted = false;
+    this.retryCount = 0;
     this.onDataReceived = onDataReceived;
     this.onVoiceStatusChange = onVoiceStatusChange;
 
@@ -42,7 +43,6 @@ export class PeerManager {
     return new Promise((resolve) => {
       let isResolved = false;
 
-      // Generated clean short room ID
       const generatedRoomId = targetRoomId || `papri-${Math.random().toString(36).substring(2, 7)}`;
       this.roomId = generatedRoomId;
       this.isHost = !targetRoomId;
@@ -52,7 +52,7 @@ export class PeerManager {
           isResolved = true;
           resolve({ isHost: this.isHost, roomId: this.roomId, peerId: 'local' });
         }
-      }, 4000);
+      }, 4500);
 
       try {
         const peerOptions = {
@@ -90,6 +90,14 @@ export class PeerManager {
 
         this.peer.on('error', (err) => {
           console.warn('PeerJS Error/Warning:', err);
+          
+          // Retry connection if client fails to find host initially
+          if (!this.isHost && targetRoomId && this.retryCount < 3) {
+            this.retryCount++;
+            setTimeout(() => this.connectToHost(targetRoomId), 1200);
+            return;
+          }
+
           if (!isResolved) {
             isResolved = true;
             clearTimeout(fallbackTimer);
@@ -108,9 +116,13 @@ export class PeerManager {
   }
 
   connectToHost(hostRoomId) {
-    if (!this.peer) return;
-    this.conn = this.peer.connect(hostRoomId, { reliable: true });
-    this.setupConnectionListeners();
+    if (!this.peer || this.peer.destroyed) return;
+    try {
+      this.conn = this.peer.connect(hostRoomId, { reliable: true });
+      this.setupConnectionListeners();
+    } catch(e) {
+      console.warn('Connect to host retry:', e);
+    }
   }
 
   setupConnectionListeners() {
@@ -128,6 +140,10 @@ export class PeerManager {
 
     this.conn.on('close', () => {
       if (this.onVoiceStatusChange) this.onVoiceStatusChange('disconnected');
+    });
+
+    this.conn.on('error', (err) => {
+      console.warn('Connection Error:', err);
     });
   }
 
