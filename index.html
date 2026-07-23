@@ -4,80 +4,596 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Papri & My Love - 3D Romantic Ludo</title>
-  <link rel="stylesheet" href="./src/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
+  </script>
+  <style>
+    :root {
+      --bg: #0f0a17; --panel: rgba(26,17,40,0.88); --pink: #ff1a53;
+      --pink-l: #ff6699; --green: #00cc88; --text: #fff0f5;
+      --glass: rgba(255,102,153,0.35);
+    }
+    * { box-sizing:border-box; margin:0; padding:0; user-select:none; font-family:'Outfit',sans-serif; -webkit-tap-highlight-color:transparent; }
+    body,html { width:100%; height:100%; height:100dvh; overflow:hidden; background:var(--bg); color:var(--text); position:fixed; }
+    #cv { width:100vw; height:100vh; height:100dvh; position:fixed; top:0; left:0; z-index:1; touch-action:none; background:#160d29; }
+    #cv canvas { width:100%!important; height:100%!important; display:block; }
+
+    .ticker { position:absolute; top:0; left:0; width:100%; background:linear-gradient(90deg,rgba(255,26,83,.95),rgba(153,0,102,.95)); color:#fff; padding:3px 12px; font-size:12px; font-weight:600; z-index:15; text-align:center; white-space:nowrap; overflow:hidden; }
+    .ticker span { display:inline-block; animation:tk 18s linear infinite; }
+    @keyframes tk { 0%{transform:translateX(100%)} 100%{transform:translateX(-100%)} }
+
+    #ui { position:absolute; top:24px; left:0; width:100%; height:calc(100% - 24px); z-index:10; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding:8px; }
+    .ia { pointer-events:auto; }
+
+    header { display:flex; justify-content:space-between; align-items:center; background:var(--panel); backdrop-filter:blur(14px); border:1px solid var(--glass); padding:6px 12px; border-radius:18px; box-shadow:0 8px 32px rgba(0,0,0,.4); }
+    .brand h1 { font-family:'Dancing Script',cursive; font-size:20px; background:linear-gradient(135deg,#ff6699,#ff1a53); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hp { display:inline-block; animation:pu 1.5s infinite; }
+    @keyframes pu { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+    .hud { display:flex; align-items:center; gap:6px; }
+    .bi { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:var(--text); padding:5px 10px; border-radius:12px; cursor:pointer; font-weight:600; font-size:11px; transition:all .3s; }
+    .bi:hover { background:var(--pink); }
+    .vh { display:flex; align-items:center; gap:5px; padding:5px 8px; background:rgba(0,204,136,.15); border:1px solid rgba(0,204,136,.4); border-radius:10px; font-size:11px; font-weight:600; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pu 1s infinite; }
+
+    .footer { display:flex; justify-content:space-between; align-items:flex-end; gap:6px; }
+    .pc { background:var(--panel); backdrop-filter:blur(14px); border:2px solid transparent; padding:8px 10px; border-radius:16px; display:flex; align-items:center; gap:8px; min-width:100px; transition:all .3s; flex-shrink:0; }
+    .pc.on { border-color:var(--pink); box-shadow:0 0 20px rgba(255,26,83,.6); transform:translateY(-2px); }
+    .av { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#ff6699,#ff1a53); display:flex; justify-content:center; align-items:center; font-size:16px; border:2px solid #fff; }
+    .pi h3 { font-size:12px; font-weight:700; } .pi p { font-size:10px; opacity:.8; }
+
+    .cc { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
+    .mb { display:flex; gap:4px; overflow-x:auto; max-width:80vw; padding:3px 6px; background:var(--panel); backdrop-filter:blur(10px); border-radius:14px; border:1px solid var(--glass); }
+    .bm { background:rgba(255,102,153,.15); border:1px solid var(--glass); color:#fff; font-size:10px; font-weight:600; padding:4px 8px; border-radius:10px; cursor:pointer; white-space:nowrap; transition:all .2s; }
+    .bm:hover { background:var(--pink); }
+    .rp { display:flex; gap:4px; background:var(--panel); backdrop-filter:blur(12px); padding:3px 8px; border-radius:16px; border:1px solid var(--glass); }
+    .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:14px; padding:4px 8px; border-radius:10px; cursor:pointer; transition:transform .2s; }
+    .br:hover { transform:scale(1.15); background:var(--pink); }
+    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:14px; font-weight:700; padding:10px 24px; border:none; border-radius:28px; cursor:pointer; box-shadow:0 8px 24px rgba(255,26,83,.6); transition:all .3s; }
+    #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    #tb { font-size:12px; font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
+
+    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:12px 24px; border-radius:28px; font-size:16px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
+    @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
+
+    .fk { position:fixed; pointer-events:none; z-index:300; animation:fb 2.5s forwards ease-out; filter:drop-shadow(0 4px 12px rgba(255,26,83,.8)); }
+    @keyframes fb { 0%{opacity:0;transform:scale(.3) translateY(40px)} 20%{opacity:1;transform:scale(1.3) translateY(0)} 70%{opacity:1;transform:scale(1.1) translateY(-120px)} 100%{opacity:0;transform:scale(.7) translateY(-220px)} }
+
+    .mo { position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh; background:rgba(10,5,20,.88); backdrop-filter:blur(10px); display:flex; justify-content:center; align-items:center; z-index:400; }
+    .mo.hid { display:none!important; }
+    .mx { background:rgba(26,17,40,.95); border:2px solid var(--glass); border-radius:24px; padding:24px; width:90%; max-width:400px; text-align:center; box-shadow:0 16px 48px rgba(0,0,0,.6); }
+    .mx h2 { font-family:'Dancing Script',cursive; font-size:32px; margin-bottom:6px; color:var(--pink-l); }
+    .mx h3 { font-size:24px; color:var(--pink); margin-bottom:16px; }
+    .mx p { margin-bottom:14px; font-size:13px; opacity:.9; }
+    .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:12px; border-radius:14px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
+
+    /* Status bar */
+    #status { position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:4px 14px; border-radius:12px; font-size:11px; font-weight:600; pointer-events:none; transition:all .3s; }
+    #status.off { background:rgba(255,26,83,.2); border-color:rgba(255,26,83,.5); color:#ff6699; }
+  </style>
 </head>
 <body>
+  <div id="cv"></div>
+  <div class="ticker"><span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Every dice roll brings my heart closer to yours 💖</span></div>
+  <div id="status" class="off">⏳ Connecting...</div>
 
-  <!-- Three.js 3D Canvas -->
-  <div id="canvas-container"></div>
-
-  <!-- Romantic Ticker -->
-  <div class="love-ticker">
-    <span>🌹 Papri + My Love = Forever ❤️ | You are the sweetest part of my life ✨ | Every dice roll brings my heart closer to yours 💖</span>
-  </div>
-
-  <!-- UI Overlay -->
-  <div id="ui-overlay">
-    <header class="interactive">
-      <div class="brand">
-        <h1>Papri & Lover Ludo <span class="heart-pulse">❤️</span></h1>
-      </div>
-      <div class="hud-status">
-        <div class="voice-hud" id="voice-hud">
-          <span class="mic-active-dot"></span>
-          <span id="voice-status-text">Connecting...</span>
-        </div>
-        <button class="btn-icon" id="btn-toggle-mic">🎙️ Mic</button>
-        <button class="btn-icon" id="btn-share-room">🔗 Share</button>
+  <div id="ui">
+    <header class="ia">
+      <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
+      <div class="hud">
+        <div class="vh"><span class="dot"></span><span id="vs">Offline</span></div>
+        <button class="bi" id="bs">🔗 Share</button>
       </div>
     </header>
-
-    <div class="game-footer">
-      <div class="player-card interactive" id="player-card-0">
-        <div class="player-avatar">🌹</div>
-        <div class="player-info">
-          <h3>Papri ❤️</h3>
-          <p id="player-0-status">Red</p>
+    <div class="footer">
+      <div class="pc ia" id="p0"><div class="av">🌹</div><div class="pi"><h3>Papri ❤️</h3><p>Red</p></div></div>
+      <div class="cc ia">
+        <div class="mb">
+          <button class="bm" data-m="I love you! ❤️">💌 Love</button>
+          <button class="bm" data-m="My Rose! 🌹">🌹</button>
+          <button class="bm" data-m="1000 kisses! 💋">💋</button>
+          <button class="bm" data-m="Gorgeous! ✨">✨</button>
         </div>
+        <div class="rp">
+          <button class="br" data-r="rose">🌹</button>
+          <button class="br" data-r="kiss">💋</button>
+          <button class="br" data-r="hug">🤗</button>
+          <button class="br" data-r="love">❤️</button>
+        </div>
+        <button id="rd" disabled>🎲 Roll Dice</button>
+        <p id="tb">Waiting to connect...</p>
       </div>
-
-      <div class="center-controls interactive">
-        <div class="love-messages-bar">
-          <button class="btn-msg" data-msg="I love you Papri! ❤️">💌 Love</button>
-          <button class="btn-msg" data-msg="You are my Rose! 🌹">🌹 Rose</button>
-          <button class="btn-msg" data-msg="1000 kisses! 💋">💋 Kiss</button>
-          <button class="btn-msg" data-msg="So gorgeous! ✨">✨ Wow</button>
-        </div>
-        <div class="reactions-panel">
-          <button class="btn-react" data-reaction="rose">🌹</button>
-          <button class="btn-react" data-reaction="kiss">💋</button>
-          <button class="btn-react" data-reaction="hug">🤗</button>
-          <button class="btn-react" data-reaction="love">❤️</button>
-        </div>
-        <button class="btn-roll-dice" id="btn-roll-dice">🎲 Roll Dice</button>
-        <p id="turn-banner-text" class="turn-banner">❤️ Roll the Dice 🎲</p>
-      </div>
-
-      <div class="player-card interactive" id="player-card-1">
-        <div class="player-avatar">💖</div>
-        <div class="player-info">
-          <h3>My Love 💖</h3>
-          <p id="player-1-status">Green</p>
-        </div>
-      </div>
+      <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
     </div>
   </div>
 
-  <!-- Victory Modal -->
-  <div class="modal-overlay hidden" id="win-modal">
-    <div class="modal-box">
-      <h2>🎉 Congratulations! ❤️</h2>
-      <h3 id="win-winner-text">Winner!</h3>
-      <p>Together forever in love! 🌹✨</p>
-      <button class="btn-primary" onclick="location.reload()">🔄 Play Again</button>
-    </div>
-  </div>
+  <div class="mo hid" id="wm"><div class="mx"><h2>🎉 Congratulations! ❤️</h2><h3 id="wt">Winner!</h3><p>Together forever in love! 🌹</p><button class="bp" onclick="location.reload()">🔄 Play Again</button></div></div>
 
-  <script type="module" src="./src/main.js"></script>
+<script type="module">
+import * as THREE from 'three';
+
+// ==================== GAME ENGINE ====================
+class Engine {
+  constructor() { this.reset(); }
+  reset() {
+    this.turn = 0; this.dv = 0; this.dr = false; this.winner = null; this.extra = false;
+    this.pl = {
+      0: { start: 0, tokens: Array(4).fill(null).map((_,i) => ({ id:i, st:'BASE', sc:0 })) },
+      1: { start: 26, tokens: Array(4).fill(null).map((_,i) => ({ id:i, st:'BASE', sc:0 })) }
+    };
+  }
+  roll() {
+    if (this.dr || this.winner !== null) return null;
+    this.dv = Math.floor(Math.random()*6)+1;
+    this.dr = true;
+    if (this.dv === 6) this.extra = true;
+    return this.dv;
+  }
+  validMoves() {
+    if (!this.dr || this.winner !== null) return [];
+    const v = [];
+    this.pl[this.turn].tokens.forEach(t => {
+      if (t.st === 'DONE') return;
+      if (t.st === 'BASE') { if (this.dv === 6) v.push(t.id); }
+      else { if (t.sc + this.dv <= 57) v.push(t.id); }
+    });
+    return v;
+  }
+  gpos(pi, sc) {
+    if (sc === 0) return { t:'B' };
+    if (sc >= 57) return { t:'F' };
+    if (sc <= 51) return { t:'T', i:(this.pl[pi].start + sc - 1) % 52 };
+    return { t:'H', i:sc - 52 };
+  }
+  move(tid) {
+    if (!this.dr || this.winner !== null) return null;
+    const vm = this.validMoves();
+    if (!vm.includes(tid)) return null;
+    const pi = this.turn;
+    const tk = this.pl[pi].tokens[tid];
+    const traj = [];
+    let cap = null;
+    if (tk.st === 'BASE') { tk.st = 'TRACK'; tk.sc = 1; traj.push(this.gpos(pi,1)); }
+    else {
+      const e = tk.sc + this.dv;
+      for (let s = tk.sc+1; s <= e; s++) traj.push(this.gpos(pi,s));
+      tk.sc = e;
+      if (tk.sc === 57) tk.st = 'DONE';
+      else if (tk.sc > 51) tk.st = 'HOME';
+    }
+    const fp = this.gpos(pi, tk.sc);
+    const safe = [0,8,13,21,26,34,39,47];
+    if (fp.t === 'T' && !safe.includes(fp.i)) {
+      const oi = 1 - pi;
+      this.pl[oi].tokens.forEach(ot => {
+        if (ot.st === 'TRACK') {
+          const op = this.gpos(oi, ot.sc);
+          if (op.t === 'T' && op.i === fp.i) {
+            ot.st = 'BASE'; ot.sc = 0;
+            cap = { pi: oi, ti: ot.id };
+            this.extra = true;
+          }
+        }
+      });
+    }
+    const win = this.pl[pi].tokens.every(t => t.st === 'DONE');
+    if (win) this.winner = pi;
+    const ext = this.extra;
+    this.dr = false; this.extra = false;
+    if (!ext && this.winner === null) this.turn = 1 - pi;
+    return { pi, tid, traj, cap, next: this.turn, ext, winner: this.winner };
+  }
+  pass() { this.dr = false; this.extra = false; this.turn = 1 - this.turn; return this.turn; }
+}
+
+// ==================== 3D BOARD ====================
+class Board {
+  constructor(scene) {
+    this.scene = scene; this.g = new THREE.Group();
+    this.track = []; this.home = { 0:[], 1:[] }; this.base = { 0:[], 1:[], 2:[], 3:[] };
+    this.build();
+  }
+  build() {
+    const s = this.scene, g = this.g;
+    // Base platform
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(14,.48,14), new THREE.MeshLambertMaterial({color:0xe6a1b0}));
+    rim.position.y = -0.25; g.add(rim);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(13.6,.4,13.6), new THREE.MeshLambertMaterial({color:0x1f172b}));
+    base.position.y = -0.2; g.add(base);
+
+    const cs = 0.8, off = -5.6;
+    const gc = (c,r) => ({ x:off+c*cs, y:0.05, z:off+r*cs });
+    const cc = (c,r,col,raised=false) => {
+      const p = gc(c,r);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(cs*.92,raised?.18:.08,cs*.92), new THREE.MeshLambertMaterial({color:col}));
+      m.position.set(p.x, raised?.09:.04, p.z); g.add(m);
+      return p;
+    };
+
+    const CR=0xff2a55, CG=0x00cc88, CY=0xffcc00, CB=0x3399ff, CT=0x2d223d, CS=0x5a3e75;
+
+    // Home bases
+    this.makeBase(0,0,5,5,CR,0,gc); this.makeBase(9,0,14,5,CY,2,gc);
+    this.makeBase(0,9,5,14,CB,3,gc); this.makeBase(9,9,14,14,CG,1,gc);
+
+    // Center trophy
+    const cp = gc(7,7);
+    const trophy = new THREE.Mesh(new THREE.ConeGeometry(1.2,1,.0,4), new THREE.MeshBasicMaterial({color:0xff0055}));
+    trophy.position.set(cp.x,.5,cp.z); trophy.rotation.y = Math.PI/4; g.add(trophy);
+    const heart = new THREE.Mesh(new THREE.SphereGeometry(.35,12,12), new THREE.MeshBasicMaterial({color:0xff3366}));
+    heart.geometry.scale(1,1.2,.8); heart.position.set(cp.x,1.1,cp.z); g.add(heart);
+
+    // Track (52 cells)
+    const path = [[1,6],[2,6],[3,6],[4,6],[5,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[7,0],[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[9,6],[10,6],[11,6],[12,6],[13,6],[14,6],[14,7],[14,8],[13,8],[12,8],[11,8],[10,8],[9,8],[8,9],[8,10],[8,11],[8,12],[8,13],[8,14],[7,14],[6,14],[6,13],[6,12],[6,11],[6,10],[6,9],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8],[0,7],[0,6]];
+    const safeIdx = [0,8,13,21,26,34,39,47];
+    path.forEach((p,i) => {
+      let col = CT;
+      if (i===0) col=CR; else if (i===26) col=CG; else if (safeIdx.includes(i)) col=CS;
+      this.track.push(cc(p[0],p[1],col,false));
+    });
+
+    // Home paths
+    for (let c=1;c<=6;c++) this.home[0].push(cc(c,7,CR,true));
+    for (let c=13;c>=8;c--) this.home[1].push(cc(c,7,CG,true));
+
+    s.add(g);
+  }
+  makeBase(sc,sr,ec,er,col,pi,gc) {
+    const cx=(sc+ec)/2, cy=(sr+er)/2, p=gc(cx,cy);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(4.6,.18,4.6), new THREE.MeshLambertMaterial({color:col}));
+    b.position.set(p.x,.09,p.z); this.g.add(b);
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(3.6,.22,3.6), new THREE.MeshLambertMaterial({color:0xfff0f5}));
+    inner.position.set(p.x,.11,p.z); this.g.add(inner);
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(o => {
+      const px=p.x+o[0], pz=p.z+o[1];
+      const sp = new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.24,12), new THREE.MeshLambertMaterial({color:col}));
+      sp.position.set(px,.12,pz); this.g.add(sp);
+      this.base[pi].push({x:px,y:.25,z:pz});
+    });
+  }
+}
+
+// ==================== 3D TOKENS ====================
+class Tokens {
+  constructor(scene, board) {
+    this.scene = scene; this.board = board; this.tk = {0:[],1:[]};
+    const cols = { 0:{m:0xff0044,c:0xff6699}, 1:{m:0x00cc88,c:0x66ffcc} };
+    [0,1].forEach(pi => {
+      for (let i=0;i<4;i++) {
+        const sp = board.base[pi][i] || {x:0,y:.25,z:0};
+        const gr = new THREE.Group();
+        const bm = new THREE.Mesh(new THREE.CylinderGeometry(.3,.32,.12,16), new THREE.MeshLambertMaterial({color:cols[pi].m}));
+        bm.position.y=.06; gr.add(bm);
+        const bd = new THREE.Mesh(new THREE.CylinderGeometry(.12,.26,.45,16), new THREE.MeshLambertMaterial({color:cols[pi].m}));
+        bd.position.y=.34; gr.add(bd);
+        const tp = new THREE.Mesh(new THREE.SphereGeometry(.16,12,12), new THREE.MeshBasicMaterial({color:cols[pi].c}));
+        tp.position.y=.62; gr.add(tp);
+        const ar = new THREE.Mesh(new THREE.RingGeometry(.34,.42,16), new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,transparent:true,opacity:0}));
+        ar.rotation.x=Math.PI/2; ar.position.y=.02; gr.add(ar);
+        gr.position.set(sp.x,sp.y,sp.z);
+        scene.add(gr);
+        this.tk[pi].push({mesh:gr,aura:ar,pos:sp,moving:false});
+      }
+    });
+  }
+  highlight(pi, ids) {
+    [0,1].forEach(p => this.tk[p].forEach((t,i) => {
+      if (p===pi && ids.includes(i)) { t.aura.material.opacity=.85; t.mesh.position.y=t.pos.y+.1; }
+      else { t.aura.material.opacity=0; if(!t.moving) t.mesh.position.y=t.pos.y; }
+    }));
+  }
+  animMove(pi, ti, coords, cb) {
+    const t = this.tk[pi][ti]; if(!t){if(cb)cb();return;}
+    t.moving=true; t.aura.material.opacity=0;
+    let si=0;
+    const step = () => {
+      if(si>=coords.length){t.moving=false;t.pos=coords[coords.length-1];if(cb)cb();return;}
+      const sp={...t.mesh.position}, ep=coords[si], dur=180, st=performance.now();
+      const up = (now) => {
+        const p=Math.min((now-st)/dur,1);
+        t.mesh.position.x=THREE.MathUtils.lerp(sp.x,ep.x,p);
+        t.mesh.position.z=THREE.MathUtils.lerp(sp.z,ep.z,p);
+        t.mesh.position.y=THREE.MathUtils.lerp(sp.y,ep.y,p)+.6*Math.sin(p*Math.PI);
+        if(p<1) requestAnimationFrame(up); else {si++;step();}
+      };
+      requestAnimationFrame(up);
+    };
+    step();
+  }
+}
+
+// ==================== 3D DICE ====================
+class Dice {
+  constructor(scene) {
+    this.scene=scene; this.rolling=false;
+    const geo=new THREE.BoxGeometry(1,1,1), mats=[];
+    [1,6,2,5,3,4].forEach(v => {
+      const cv=document.createElement('canvas'); cv.width=128; cv.height=128;
+      const cx=cv.getContext('2d');
+      const gr=cx.createLinearGradient(0,0,128,128); gr.addColorStop(0,'#fff5f7'); gr.addColorStop(1,'#ffd1dc');
+      cx.fillStyle=gr; cx.fillRect(0,0,128,128);
+      cx.strokeStyle='#e60039'; cx.lineWidth=6; cx.strokeRect(4,4,120,120);
+      const dh=(x,y)=>{cx.fillStyle='#ff1a53';cx.beginPath();cx.moveTo(x,y+10);cx.bezierCurveTo(x,y+10,x-12,y-4,x-12,y-12);cx.bezierCurveTo(x-12,y-18,x-4,y-20,x,y-12);cx.bezierCurveTo(x+4,y-20,x+12,y-18,x+12,y-12);cx.bezierCurveTo(x+12,y-4,x,y+10,x,y+10);cx.fill();};
+      const ps={1:[[64,64]],2:[[36,36],[92,92]],3:[[36,36],[64,64],[92,92]],4:[[36,36],[92,36],[36,92],[92,92]],5:[[36,36],[92,36],[64,64],[36,92],[92,92]],6:[[36,32],[92,32],[36,64],[92,64],[36,96],[92,96]]};
+      if(ps[v]) ps[v].forEach(p=>dh(p[0],p[1]));
+      mats.push(new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(cv)}));
+    });
+    this.mesh=new THREE.Mesh(geo,mats);
+    this.grp=new THREE.Group(); this.grp.add(this.mesh); this.grp.position.set(0,.6,0);
+    scene.add(this.grp);
+    this.rots={1:{x:0,z:-Math.PI/2},6:{x:0,z:Math.PI/2},2:{x:-Math.PI/2,z:0},5:{x:Math.PI/2,z:0},3:{x:0,z:0},4:{x:Math.PI,z:0}};
+  }
+  roll(val,cb) {
+    if(this.rolling)return; this.rolling=true;
+    const sy=this.grp.position.y, dur=1000, st=performance.now();
+    const tr=this.rots[val]||{x:0,z:0};
+    const an=(now)=>{
+      const p=Math.min((now-st)/dur,1);
+      this.mesh.rotation.x=THREE.MathUtils.lerp(0,tr.x+Math.PI*6,p);
+      this.mesh.rotation.y=THREE.MathUtils.lerp(0,Math.PI*4,p);
+      this.mesh.rotation.z=THREE.MathUtils.lerp(0,tr.z+Math.PI*6,p);
+      this.grp.position.y=sy+Math.sin(p*Math.PI)*2.2;
+      if(p<1) requestAnimationFrame(an);
+      else {this.mesh.rotation.set(tr.x,0,tr.z);this.grp.position.y=sy;this.rolling=false;if(cb)cb();}
+    };
+    requestAnimationFrame(an);
+  }
+}
+
+// ==================== PARTICLES ====================
+class Particles {
+  constructor(scene) {
+    this.scene=scene; this.petals=[]; this.hearts=[];
+    // Rose petals
+    const pg=new THREE.PlaneGeometry(.35,.45);
+    const pcv=document.createElement('canvas');pcv.width=64;pcv.height=64;
+    const pcx=pcv.getContext('2d');const pgr=pcx.createRadialGradient(32,32,2,32,32,30);
+    pgr.addColorStop(0,'#ff1a40');pgr.addColorStop(.7,'#e60039');pgr.addColorStop(1,'rgba(150,0,30,0)');
+    pcx.fillStyle=pgr;pcx.beginPath();pcx.arc(32,32,30,0,Math.PI*2);pcx.fill();
+    const pm=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(pcv),transparent:true,side:THREE.DoubleSide,depthWrite:false});
+    this.pg=new THREE.Group();
+    for(let i=0;i<80;i++){
+      const m=new THREE.Mesh(pg,pm);
+      m.position.set((Math.random()-.5)*22,Math.random()*16+2,(Math.random()-.5)*22);
+      m.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI,Math.random()*Math.PI);
+      this.petals.push({mesh:m,sy:.02+Math.random()*.03,rx:(Math.random()-.5)*.03,ry:(Math.random()-.5)*.04,ix:m.position.x});
+      this.pg.add(m);
+    }
+    scene.add(this.pg);
+    // Hearts
+    const hcv=document.createElement('canvas');hcv.width=64;hcv.height=64;
+    const hcx=hcv.getContext('2d');hcx.fillStyle='#ff6b8b';hcx.beginPath();
+    hcx.moveTo(32,48);hcx.bezierCurveTo(32,48,12,34,12,22);hcx.bezierCurveTo(12,12,22,10,32,20);
+    hcx.bezierCurveTo(42,10,52,12,52,22);hcx.bezierCurveTo(52,34,32,48,32,48);hcx.fill();
+    const hm=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(hcv),transparent:true,opacity:.8,blending:THREE.AdditiveBlending});
+    this.hg=new THREE.Group();
+    for(let i=0;i<40;i++){
+      const sp=new THREE.Sprite(hm);
+      sp.position.set((Math.random()-.5)*18,Math.random()*12-2,(Math.random()-.5)*18);
+      const sc=.25+Math.random()*.4; sp.scale.set(sc,sc,1);
+      this.hearts.push({sp,bs:sc,sy:.01+Math.random()*.02,ph:Math.random()*Math.PI*2});
+      this.hg.add(sp);
+    }
+    scene.add(this.hg);
+  }
+  update(t) {
+    this.petals.forEach(p=>{p.mesh.position.y-=p.sy;p.mesh.position.x=p.ix+Math.sin(t*2.5+p.mesh.position.y)*.9;p.mesh.rotation.x+=p.rx;p.mesh.rotation.y+=p.ry;if(p.mesh.position.y<-3){p.mesh.position.y=16;p.mesh.position.x=(Math.random()-.5)*22;p.ix=p.mesh.position.x;}});
+    this.hearts.forEach(h=>{h.sp.position.y+=h.sy;const s=h.bs*(1+Math.sin(t*3+h.ph)*.3);h.sp.scale.set(s,s,1);if(h.sp.position.y>13){h.sp.position.y=-3;h.sp.position.x=(Math.random()-.5)*18;}});
+  }
+  kiss(emoji='💋') {
+    for(let i=0;i<30;i++){const e=document.createElement('div');e.className='fk';e.innerText=emoji;e.style.left=Math.random()*95+'vw';e.style.top=Math.random()*85+'vh';e.style.fontSize=(28+Math.random()*48)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),3200);}
+  }
+}
+
+// ==================== MAIN APP ====================
+class App {
+  constructor() {
+    this.eng = new Engine();
+    this.myId = 0;
+    this.ws = null;
+    this.connected = false;
+
+    // 3D Setup
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x160d29);
+    this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
+    this.cam = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+    this.ren = new THREE.WebGLRenderer({antialias:true,alpha:false});
+    this.ren.setSize(innerWidth,innerHeight);
+    this.ren.setPixelRatio(Math.min(devicePixelRatio,2));
+    document.getElementById('cv').appendChild(this.ren.domElement);
+
+    // Lights
+    this.scene.add(new THREE.AmbientLight(0xfff0f5,1.0));
+    const s=new THREE.DirectionalLight(0xffe6ee,1.4);s.position.set(6,12,6);this.scene.add(s);
+    const pk=new THREE.PointLight(0xff1a53,1.8,14);pk.position.set(-5,4,-5);this.scene.add(pk);
+    const gn=new THREE.PointLight(0x00cc88,1.8,14);gn.position.set(5,4,5);this.scene.add(gn);
+
+    this.fitCam();
+    this.board = new Board(this.scene);
+    this.tokens = new Tokens(this.scene, this.board);
+    this.dice = new Dice(this.scene);
+    this.parts = new Particles(this.scene);
+    this.ray = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+
+    document.getElementById('cv').addEventListener('pointerdown', e => this.click(e));
+    window.addEventListener('resize', () => this.fitCam());
+
+    this.ui();
+    this.animate();
+
+    // Buttons
+    document.getElementById('rd').addEventListener('click', () => this.rollDice());
+    document.getElementById('bs').addEventListener('click', () => {
+      const url = location.origin + location.pathname;
+      navigator.clipboard.writeText(url).catch(()=>{});
+      alert('Link copied! Send to Papri:\n' + url);
+    });
+    document.querySelectorAll('.bm').forEach(b => b.addEventListener('click', e => {
+      const m = e.target.getAttribute('data-m'); if(m) this.chat(m);
+    }));
+    document.querySelectorAll('.br').forEach(b => b.addEventListener('click', e => {
+      const r = e.target.getAttribute('data-r'); if(r) this.react(r,true);
+    }));
+
+    // Connect WebSocket
+    setTimeout(() => this.connectWS(), 500);
+  }
+
+  fitCam() {
+    const a = innerWidth/innerHeight;
+    this.cam.aspect = a;
+    if (a < 1) { const d=14/a; this.cam.position.set(0,d,d); }
+    else this.cam.position.set(0,11,11);
+    this.cam.lookAt(0,0,0);
+    this.cam.updateProjectionMatrix();
+    this.ren.setSize(innerWidth,innerHeight);
+  }
+
+  connectWS() {
+    const host = location.hostname || 'localhost';
+    const wsUrl = `ws://${host}:8765`;
+    const st = document.getElementById('status');
+
+    try {
+      this.ws = new WebSocket(wsUrl);
+      this.ws.onopen = () => { st.textContent = '🔌 Connected to server'; st.className = ''; };
+      this.ws.onclose = () => { st.textContent = '❌ Disconnected'; st.className = 'off'; this.connected = false; this.ui(); setTimeout(() => this.connectWS(), 3000); };
+      this.ws.onerror = () => { setTimeout(() => this.connectWS(), 3000); };
+      this.ws.onmessage = (e) => {
+        try { this.onMsg(JSON.parse(e.data)); } catch(er) {}
+      };
+    } catch(e) {
+      setTimeout(() => this.connectWS(), 3000);
+    }
+  }
+
+  onMsg(d) {
+    const st = document.getElementById('status');
+    if (d.action === 'ASSIGNED') {
+      this.myId = d.playerId;
+      st.textContent = this.myId === 0 ? '🌹 You are Papri (Red)' : '💖 You are My Love (Green)';
+      this.popup(this.myId === 0 ? 'You are Papri ❤️\nWaiting for partner...' : 'You are My Love 💖\nWaiting...');
+      this.ui();
+    } else if (d.action === 'GAME_START') {
+      this.connected = true;
+      st.textContent = '✅ Both players online!'; st.className = '';
+      this.popup('Both connected! Game ON! ❤️🎲');
+      this.ui();
+    } else if (d.action === 'DICE_ROLL') {
+      this.eng.dv = d.payload.val; this.eng.dr = true;
+      if (d.payload.val === 6) this.eng.extra = true;
+      if (this.dice) this.dice.roll(d.payload.val, () => this.ui());
+    } else if (d.action === 'MOVE_TOKEN') {
+      this.doMove(d.payload.tokenId, false);
+    } else if (d.action === 'PASS_TURN') {
+      this.eng.pass(); this.ui();
+    } else if (d.action === 'CHAT_MSG') {
+      this.parts.kiss('💖'); this.popup(d.payload.msg);
+    } else if (d.action === 'REACTION') {
+      this.react(d.payload.type, false);
+    } else if (d.action === 'PLAYER_LEFT') {
+      st.textContent = '⚠️ Partner disconnected'; st.className = 'off';
+      this.connected = false; this.ui();
+    }
+  }
+
+  send(action, payload={}) {
+    if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({action,payload}));
+  }
+
+  rollDice() {
+    if (this.eng.turn !== this.myId) return;
+    if (this.eng.dr || this.eng.winner !== null) return;
+    const v = this.eng.roll(); if (!v) return;
+    this.send('DICE_ROLL', {val:v});
+    if (this.dice) this.dice.roll(v, () => this.afterDice());
+  }
+
+  afterDice() {
+    const vm = this.eng.validMoves();
+    if (vm.length === 0) {
+      setTimeout(() => { this.eng.pass(); this.send('PASS_TURN',{}); this.ui(); }, 600);
+    } else if (vm.length === 1) {
+      this.doMove(vm[0], true);
+    } else {
+      this.tokens.highlight(this.eng.turn, vm); this.ui();
+    }
+  }
+
+  doMove(tid, bcast) {
+    const r = this.eng.move(tid); if (!r) return;
+    if (bcast) this.send('MOVE_TOKEN', {tokenId:tid});
+    const coords = r.traj.map(p => {
+      if (p.t === 'T') return this.board.track[p.i];
+      if (p.t === 'H') return this.board.home[r.pi][p.i];
+      return {x:0,y:.5,z:0};
+    });
+    this.tokens.animMove(r.pi, tid, coords, () => {
+      if (r.cap) {
+        const b = this.board.base[r.cap.pi][r.cap.ti];
+        const t = this.tokens.tk[r.cap.pi][r.cap.ti];
+        if (t) { t.mesh.position.set(b.x,b.y,b.z); t.pos = b; }
+      }
+      this.tokens.highlight(-1,[]);
+      if (r.winner !== null) this.victory(r.winner); else this.ui();
+    });
+  }
+
+  click(e) {
+    if (this.eng.turn !== this.myId || !this.eng.dr) return;
+    const vm = this.eng.validMoves(); if (!vm.length) return;
+    this.mouse.x = (e.clientX/innerWidth)*2-1;
+    this.mouse.y = -(e.clientY/innerHeight)*2+1;
+    this.ray.setFromCamera(this.mouse, this.cam);
+    const ms = vm.map(i => this.tokens.tk[this.eng.turn][i].mesh).filter(Boolean);
+    const h = this.ray.intersectObjects(ms, true);
+    if (h.length) {
+      let o = h[0].object; while(o.parent && !o.parent.isGroup) o = o.parent;
+      const idx = this.tokens.tk[this.eng.turn].findIndex(t => t.mesh===o||t.mesh===o.parent);
+      if (idx!==-1 && vm.includes(idx)) this.doMove(idx, true);
+    }
+  }
+
+  chat(m) { this.parts.kiss('💖'); this.popup(m); this.send('CHAT_MSG',{msg:m}); }
+  react(type, bcast) {
+    if (bcast) this.send('REACTION',{type});
+    this.parts.kiss({rose:'🌹',kiss:'💋',hug:'🤗',love:'❤️'}[type]||'❤️');
+    this.popup({rose:'🌹 Rose Shower!',kiss:'💋 Kisses!',hug:'🤗 Hugs!',love:'❤️ Love!'}[type]||'❤️');
+  }
+  popup(m) { const e=document.createElement('div');e.className='pop';e.innerText=m;document.body.appendChild(e);setTimeout(()=>e.remove(),2500); }
+  victory(w) {
+    const wm=document.getElementById('wm'),wt=document.getElementById('wt');
+    if(wt) wt.innerText = w===0?'Papri Wins! 🌹':'My Love Wins! 💖';
+    if(wm) {wm.style.display='flex';wm.classList.remove('hid');}
+  }
+  ui() {
+    const t=this.eng.turn, mine=t===this.myId;
+    const p0=document.getElementById('p0'),p1=document.getElementById('p1');
+    if(p0) p0.classList.toggle('on',t===0);
+    if(p1) p1.classList.toggle('on',t===1);
+    const btn=document.getElementById('rd');
+    if(btn) btn.disabled = !mine || this.eng.dr || this.eng.winner!==null || !this.connected;
+    const tb=document.getElementById('tb');
+    if(tb) {
+      if (!this.connected) tb.innerText='Waiting for partner to join...';
+      else if (this.eng.winner!==null) tb.innerText='🎉 Game Over!';
+      else if (mine) { tb.innerText='❤️ Your Turn! Roll 🎲'; tb.style.color='#ff6699'; }
+      else { tb.innerText="Partner's turn..."; tb.style.color='#fff'; }
+    }
+  }
+  animate(t=0) {
+    requestAnimationFrame(t2=>this.animate(t2));
+    const s=t*.001;
+    this.parts.update(s);
+    this.cam.position.x=Math.sin(s*.3)*.4;
+    this.cam.lookAt(0,0,0);
+    this.ren.render(this.scene,this.cam);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => { window.app = new App(); });
+</script>
 </body>
 </html>
