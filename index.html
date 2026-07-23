@@ -50,11 +50,15 @@
     .rp { display:flex; gap:4px; background:var(--panel); backdrop-filter:blur(12px); padding:3px 8px; border-radius:16px; border:1px solid var(--glass); }
     .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:14px; padding:4px 8px; border-radius:10px; cursor:pointer; transition:transform .2s; }
     .br:hover { transform:scale(1.15); background:var(--pink); }
-    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:14px; font-weight:700; padding:10px 24px; border:none; border-radius:28px; cursor:pointer; box-shadow:0 8px 24px rgba(255,26,83,.6); transition:all .3s; }
-    #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-    #tb { font-size:12px; font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
 
-    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:12px 24px; border-radius:28px; font-size:16px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
+    /* Dice Controls & Big Display */
+    .dice-container { display:flex; align-items:center; gap:10px; }
+    .dice-val-box { width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:22px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 14px rgba(255,26,83,.5); }
+    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:15px; font-weight:700; padding:12px 28px; border:none; border-radius:28px; cursor:pointer; box-shadow:0 8px 24px rgba(255,26,83,.6); transition:all .3s; }
+    #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    #tb { font-size:13px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
+
+    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:14px 28px; border-radius:28px; font-size:17px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
     @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
 
     .fk { position:fixed; pointer-events:none; z-index:300; animation:fb 2.5s forwards ease-out; filter:drop-shadow(0 4px 12px rgba(255,26,83,.8)); }
@@ -69,7 +73,6 @@
     .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:12px; border-radius:14px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
 
     #status { position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:4px 14px; border-radius:12px; font-size:11px; font-weight:600; pointer-events:none; transition:all .3s; }
-    #status.off { background:rgba(255,26,83,.2); border-color:rgba(255,26,83,.5); color:#ff6699; }
   </style>
 </head>
 <body>
@@ -81,7 +84,7 @@
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">Online Connected</span></div>
+        <div class="vh"><span class="dot"></span><span id="vs">Multiplayer Live</span></div>
         <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
@@ -100,7 +103,10 @@
           <button class="br" data-r="hug">🤗</button>
           <button class="br" data-r="love">❤️</button>
         </div>
-        <button id="rd">🎲 Roll Dice</button>
+        <div class="dice-container">
+          <div class="dice-val-box" id="dv-box">🎲</div>
+          <button id="rd">🎲 Roll Dice</button>
+        </div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
       <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
@@ -124,7 +130,11 @@ class Engine {
   }
   roll() {
     if (this.dr || this.winner !== null) return null;
-    this.dv = Math.floor(Math.random()*6)+1;
+    // True Cryptographically/Uniformly Random Dice 1..6
+    const randomArray = new Uint32Array(1);
+    window.crypto.getRandomValues(randomArray);
+    this.dv = (randomArray[0] % 6) + 1;
+
     this.dr = true;
     if (this.dv === 6) this.extra = true;
     return this.dv;
@@ -319,9 +329,12 @@ class Dice {
     this.rots={1:{x:0,z:-Math.PI/2},6:{x:0,z:Math.PI/2},2:{x:-Math.PI/2,z:0},5:{x:Math.PI/2,z:0},3:{x:0,z:0},4:{x:Math.PI,z:0}};
   }
   roll(val,cb) {
-    if(this.rolling)return; this.rolling=true;
-    const sy=this.grp.position.y, dur=1000, st=performance.now();
+    if(this.rolling) { if(cb) cb(); return; }
+    this.rolling=true;
+    const sy=this.grp.position.y, dur=900, st=performance.now();
     const tr=this.rots[val]||{x:0,z:0};
+    this.mesh.rotation.set(0,0,0);
+
     const an=(now)=>{
       const p=Math.min((now-st)/dur,1);
       this.mesh.rotation.x=THREE.MathUtils.lerp(0,tr.x+Math.PI*6,p);
@@ -329,7 +342,12 @@ class Dice {
       this.mesh.rotation.z=THREE.MathUtils.lerp(0,tr.z+Math.PI*6,p);
       this.grp.position.y=sy+Math.sin(p*Math.PI)*2.2;
       if(p<1) requestAnimationFrame(an);
-      else {this.mesh.rotation.set(tr.x,0,tr.z);this.grp.position.y=sy;this.rolling=false;if(cb)cb();}
+      else {
+        this.mesh.rotation.set(tr.x,0,tr.z);
+        this.grp.position.y=sy;
+        this.rolling=false;
+        if(cb) cb();
+      }
     };
     requestAnimationFrame(an);
   }
@@ -383,15 +401,12 @@ class App {
   constructor() {
     this.eng = new Engine();
 
-    // Check if player ID is explicitly assigned by URL ?player=1 or ?player=0
     const urlParams = new URLSearchParams(location.search);
     const pParam = urlParams.get('player');
-    this.myId = pParam !== null ? parseInt(pParam, 10) : null; 
-    // If myId is null, we are in Auto / Pass-and-Play / 1-Tab mode where Roll Dice controls current turn!
+    this.myId = pParam !== null ? parseInt(pParam, 10) : null;
 
     this.isOnlinePartnerConnected = false;
 
-    // BroadcastChannel for instant 2-tab sync on same machine
     try {
       this.bc = new BroadcastChannel('papri_ludu_channel');
       this.bc.onmessage = (e) => {
@@ -400,7 +415,6 @@ class App {
       };
     } catch(e) { this.bc = null; }
 
-    // 3D Setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x160d29);
     this.scene.fog = new THREE.FogExp2(0x160d29, 0.035);
@@ -410,7 +424,6 @@ class App {
     this.ren.setPixelRatio(Math.min(devicePixelRatio,2));
     document.getElementById('cv').appendChild(this.ren.domElement);
 
-    // Lights
     this.scene.add(new THREE.AmbientLight(0xfff0f5,1.0));
     const s=new THREE.DirectionalLight(0xffe6ee,1.4);s.position.set(6,12,6);this.scene.add(s);
     const pk=new THREE.PointLight(0xff1a53,1.8,14);pk.position.set(-5,4,-5);this.scene.add(pk);
@@ -430,7 +443,6 @@ class App {
     this.ui();
     this.animate();
 
-    // Buttons
     document.getElementById('rd').addEventListener('click', () => this.rollDice());
     document.getElementById('bs').addEventListener('click', () => {
       const url = location.origin + location.pathname;
@@ -444,7 +456,6 @@ class App {
       const r = e.target.getAttribute('data-r'); if(r) this.react(r,true);
     }));
 
-    // Connect PeerJS / WebSocket
     this.initNetwork();
   }
 
@@ -462,7 +473,6 @@ class App {
     const st = document.getElementById('status');
     const ROOM_ID = 'papri-love-3d-main-room';
 
-    // WebSocket URL check (Railway or custom WS server)
     const urlParams = new URLSearchParams(location.search);
     const wsParam = urlParams.get('ws');
 
@@ -487,7 +497,7 @@ class App {
         this.peer = new Peer(ROOM_ID, { debug: 1 });
 
         this.peer.on('open', (id) => {
-          if (this.myId === null) this.myId = 0; // Host = Papri
+          if (this.myId === null) this.myId = 0;
           st.textContent = '🌹 Papri ❤️ (Red) — Ready to Play!';
           st.className = '';
           this.ui();
@@ -506,7 +516,7 @@ class App {
             if (this.peer) this.peer.destroy();
             this.peer = new Peer({ debug: 1 });
             this.peer.on('open', () => {
-              if (this.myId === null) this.myId = 1; // Client = Green
+              if (this.myId === null) this.myId = 1;
               this.isOnlinePartnerConnected = true;
               st.textContent = '💖 My Love (Green) — Connected!';
               this.conn = this.peer.connect(ROOM_ID, { reliable: true });
@@ -537,6 +547,10 @@ class App {
     if (d.action === 'DICE_ROLL') {
       this.eng.dv = d.payload.val; this.eng.dr = true;
       if (d.payload.val === 6) this.eng.extra = true;
+
+      const dvBox = document.getElementById('dv-box');
+      if (dvBox) dvBox.textContent = d.payload.val;
+
       if (this.dice) this.dice.roll(d.payload.val, () => this.ui());
     } else if (d.action === 'MOVE_TOKEN') {
       this.doMove(d.payload.tokenId, false);
@@ -557,14 +571,16 @@ class App {
   }
 
   rollDice() {
-    // If myId is set AND online partner is connected, enforce player turn!
-    // If standalone / 1-tab testing, ALLOW ROLLING FOR CURRENT TURN ALWAYS!
     if (this.isOnlinePartnerConnected && this.myId !== null && this.eng.turn !== this.myId) {
       return;
     }
 
     if (this.eng.dr || this.eng.winner !== null) return;
     const v = this.eng.roll(); if (!v) return;
+
+    // Display rolled value on 2D Box instantly
+    const dvBox = document.getElementById('dv-box');
+    if (dvBox) dvBox.textContent = v;
 
     this.broadcast('DICE_ROLL', {val:v});
 
@@ -574,11 +590,17 @@ class App {
   afterDice() {
     const vm = this.eng.validMoves();
     if (vm.length === 0) {
+      const pName = this.eng.turn === 0 ? 'Papri ❤️' : 'My Love 💖';
+      const needMsg = (this.eng.dv !== 6 && this.eng.pl[this.eng.turn].tokens.every(t => t.st === 'BASE')) 
+        ? `Rolled ${this.eng.dv} 🎲 (Need 6 to unlock token!)`
+        : `Rolled ${this.eng.dv} 🎲 (No valid moves)`;
+      this.popup(`${pName}\n${needMsg}`);
+
       setTimeout(() => {
         this.eng.pass();
         this.broadcast('PASS_TURN',{});
         this.ui();
-      }, 600);
+      }, 700);
     } else if (vm.length === 1) {
       this.doMove(vm[0], true);
     } else {

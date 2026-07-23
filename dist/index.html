@@ -48,11 +48,15 @@
     .rp { display:flex; gap:4px; background:var(--panel); backdrop-filter:blur(12px); padding:3px 8px; border-radius:16px; border:1px solid var(--glass); }
     .br { background:rgba(255,255,255,.08); border:1px solid var(--glass); color:#fff; font-size:14px; padding:4px 8px; border-radius:10px; cursor:pointer; transition:transform .2s; }
     .br:hover { transform:scale(1.15); background:var(--pink); }
-    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:14px; font-weight:700; padding:10px 24px; border:none; border-radius:28px; cursor:pointer; box-shadow:0 8px 24px rgba(255,26,83,.6); transition:all .3s; }
-    #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
-    #tb { font-size:12px; font-weight:600; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
 
-    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:12px 24px; border-radius:28px; font-size:16px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
+    /* Dice Controls & Big Display */
+    .dice-container { display:flex; align-items:center; gap:10px; }
+    .dice-val-box { width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,#fff,#ffd1dc); border:2px solid #ff1a53; color:#ff1a53; font-size:22px; font-weight:900; display:flex; justify-content:center; align-items:center; box-shadow:0 4px 14px rgba(255,26,83,.5); }
+    #rd { background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; font-size:15px; font-weight:700; padding:12px 28px; border:none; border-radius:28px; cursor:pointer; box-shadow:0 8px 24px rgba(255,26,83,.6); transition:all .3s; }
+    #rd:hover { transform:scale(1.08); } #rd:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+    #tb { font-size:13px; font-weight:700; text-shadow:0 2px 4px rgba(0,0,0,.8); text-align:center; }
+
+    .pop { position:absolute; top:35%; left:50%; transform:translate(-50%,-50%); background:rgba(255,26,83,.95); color:#fff; padding:14px 28px; border-radius:28px; font-size:17px; font-weight:700; box-shadow:0 12px 32px rgba(255,26,83,.8); animation:pf 2.5s forwards; pointer-events:none; z-index:250; text-align:center; white-space:pre-line; }
     @keyframes pf { 0%{opacity:0;transform:translate(-50%,-20%) scale(.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 80%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(.8)} }
 
     .fk { position:fixed; pointer-events:none; z-index:300; animation:fb 2.5s forwards ease-out; filter:drop-shadow(0 4px 12px rgba(255,26,83,.8)); }
@@ -67,12 +71,11 @@
     .bp { width:100%; background:linear-gradient(135deg,#ff1a53,#ff6699); color:#fff; padding:12px; border-radius:14px; border:none; font-size:14px; font-weight:700; cursor:pointer; }
 
     #status { position:fixed; top:26px; left:50%; transform:translateX(-50%); z-index:20; background:rgba(0,204,136,.2); border:1px solid rgba(0,204,136,.5); color:#66ffcc; padding:4px 14px; border-radius:12px; font-size:11px; font-weight:600; pointer-events:none; transition:all .3s; }
-    #status.off { background:rgba(255,26,83,.2); border-color:rgba(255,26,83,.5); color:#ff6699; }
   </style>
   <script type="importmap">
   { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js" } }
   </script>
-  <script type="module" crossorigin src="./assets/index-CNMcTbmR.js"></script>
+  <script type="module" crossorigin src="./assets/index-D-uizpMn.js"></script>
 </head>
 <body>
   <div id="cv"></div>
@@ -83,7 +86,7 @@
     <header class="ia">
       <div class="brand"><h1>Papri Ludo <span class="hp">❤️</span></h1></div>
       <div class="hud">
-        <div class="vh"><span class="dot"></span><span id="vs">Online Connected</span></div>
+        <div class="vh"><span class="dot"></span><span id="vs">Multiplayer Live</span></div>
         <button class="bi" id="bs">🔗 Share Link</button>
       </div>
     </header>
@@ -102,7 +105,10 @@
           <button class="br" data-r="hug">🤗</button>
           <button class="br" data-r="love">❤️</button>
         </div>
-        <button id="rd">🎲 Roll Dice</button>
+        <div class="dice-container">
+          <div class="dice-val-box" id="dv-box">🎲</div>
+          <button id="rd">🎲 Roll Dice</button>
+        </div>
         <p id="tb">❤️ Papri's Turn! Roll 🎲</p>
       </div>
       <div class="pc ia" id="p1"><div class="av">💖</div><div class="pi"><h3>My Love 💖</h3><p>Green</p></div></div>
